@@ -12,7 +12,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-
 # Custom CSS to mimic the Dark Dashboard aesthetic
 st.markdown("""
 <style>
