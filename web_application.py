@@ -1,285 +1,719 @@
-import streamlit as st
-import numpy as np
-import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
+# ============================================================================
+# ACOUSTIC DESIGN ASSISTANT (ADA) - Web Application
+# A tool to help users understand how sound behaves in rooms
+# ============================================================================
 
-# --- 1. CONFIGURATION & STYLING ---
+# SECTION 1: IMPORT EXTERNAL LIBRARIES
+# These are tools/packages that other people wrote that we're using in our app
+import streamlit as st           # Creates interactive web apps in Python (no HTML needed!)
+import numpy as np               # For fast math calculations with lists of numbers
+import pandas as pd              # For organizing data into tables (like Excel)
+import plotly.graph_objects as go  # For creating interactive charts and graphs
+import plotly.express as px      # A simpler way to make charts with plotly
+
+# ============================================================================
+# SECTION 2: PAGE CONFIGURATION & STYLING
+# This sets up how the web page will look and behave
+# ============================================================================
+
+# Configure basic page settings that appear in the browser tab and layout
 st.set_page_config(
-    page_title="ADA | Acoustic Design",
-    page_icon="🌊",
-    layout="wide",
-    initial_sidebar_state="collapsed"
+    page_title="ADA | Acoustic Design Assistant",  # Text shown in browser tab
+    page_icon="🌊",  # Small icon next to the title in browser tab
+    layout="wide",  # Use full width of screen (instead of narrow center column)
+    initial_sidebar_state="collapsed"  # Hide the sidebar by default to save space
 )
 
-# Custom CSS to mimic the Dark Dashboard aesthetic
+
+# CUSTOM CSS STYLING
+# This is special code (HTML/CSS) that makes the page look nice with colors and formatting
 st.markdown("""
 <style>
-    /* Main background and text */
+    /* ===== GLOBAL TYPOGRAPHY SCALING ===== */
+    /* Increase the base text size by 15% across the entire app */
+    html, body, .stApp, [data-testid="stAppViewContainer"] {
+        font-size: 115% !important;
+    }
+
+    /* ===== MAIN PAGE COLORS ===== */
+    /* These settings change the background and text colors of the entire app */
     .stApp {
-        background-color: #0f172a;
-        color: #e2e8f0;
+        background-color: #0f172a;  /* Very dark blue background (like night sky) */
+        color: #e2e8f0;  /* Light gray text color (easy on the eyes) */
     }
-    /* Hide default Streamlit top menu and footer for a standalone app feel */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
     
-    /* Style the metric boxes */
+    /* HIDE DEFAULT STREAMLIT ELEMENTS */
+    /* We hide these to make the app look more professional and custom */
+    #MainMenu {visibility: hidden;}  /* Hide the Streamlit hamburger menu */
+    footer {visibility: hidden;}  /* Hide "Made with Streamlit" footer */
+    
+    /* ===== METRIC BOXES STYLING ===== */
+    /* Metrics are the boxes showing numbers like "Volume: 60 m³" */
     div[data-testid="stMetricValue"] {
-        color: #3b82f6;
+        color: #3b82f6;  /* Make the numbers blue (stands out) */
     }
-    /* Headers */
+    /* The labels above the numbers (like "Volume", "Surface") */
+    div[data-testid="stMetric"] label {
+        color: #d1d5db !important;  /* Light gray text */
+    }
+    
+    /* ===== INPUT CONTROLS STYLING ===== */
+    /* These are sliders (Length, Width, Height) and dropdown menus */
+    .stSlider > label {
+        color: #d1d5db !important;  /* Label text for sliders */
+    }
+    .stSelectbox > label {
+        color: #d1d5db !important;  /* Label text for dropdown menus */
+    }
+    
+    /* ===== HEADERS STYLING ===== */
+    /* H1/H2/H3 are the different heading sizes (### Room Geometry = H3) */
     h1, h2, h3 {
-        color: #f8fafc !important;
+        color: #f8fafc !important;  /* Very light color for headers (brightest text) */
     }
-    /* Custom tabs */
+    
+    /* ===== TABS STYLING ===== */
+    /* The tabs are the "📊 Modal Analysis", "⏱️ RT60 Calculator", etc buttons at top */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 24px;
-        background-color: #1e293b;
-        padding: 10px 20px;
-        border-radius: 10px;
+        gap: 24px;  /* Space between tab buttons */
+        background-color: #1e293b;  /* Dark blue background for tab area */
+        padding: 10px 20px;  /* Space inside the tab area */
+        border-radius: 10px;  /* Rounded corners */
     }
+    /* The inactive tabs (not currently selected) */
     .stTabs [data-baseweb="tab"] {
-        color: #94a3b8;
+        color: #94a3b8;  /* Grayish text for inactive tabs */
     }
+    /* The active tab (currently selected) */
     .stTabs [aria-selected="true"] {
-        color: #60a5fa !important;
+        color: #60a5fa !important;  /* Bright blue for active tab */
+    }
+
+    /* ===== ROOM GEOMETRY SECTION SPACING ===== */
+    div[data-testid="stSlider"] {
+        padding-top: 0.75rem;
+        padding-bottom: 1rem;
+    }
+    div[data-testid="stMetric"] {
+        padding: 1rem 1.1rem;
+        min-height: 96px;
+        margin-top: 0.5rem;
+    }
+    div[data-testid="stMetricValue"] {
+        font-size: 1.2rem !important;
+        line-height: 1.2;
+    }
+
+    /* Make the Room Geometry controls and metrics 15% larger while leaving the heading unchanged */
+    div[data-testid="stSlider"] label,
+    div[data-testid="stMetric"] label,
+    div[data-testid="stMetricValue"],
+    div[data-testid="stMetric"] [data-testid="stMetricLabel"] {
+        font-size: 115% !important;
     }
 </style>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=True)  # unsafe_allow_html=True lets us use custom HTML/CSS
 
-# --- 2. DATA LAYER ---
+
+# ============================================================================
+# SECTION 3: DATA LAYER - CONSTANTS & MATERIAL PROPERTIES
+# This is the data our app uses (like a phone book of information)
+# ============================================================================
+
+# MATERIALS DICTIONARY
+# Stores information about different building materials and how much sound they absorb
+# The numbers in the lists represent absorption coefficients at different frequencies
+# (Higher number = material absorbs more sound at that frequency)
 MATERIALS = {
-    "Concrete (Reflective)": [0.01, 0.01, 0.01, 0.02, 0.02, 0.03],
-    "Brick Wall (Reflective)": [0.03, 0.03, 0.03, 0.04, 0.05, 0.07],
-    "Glass (Reflective)": [0.35, 0.25, 0.18, 0.12, 0.07, 0.04],
-    "Wood Floor (Reflective)": [0.15, 0.11, 0.10, 0.07, 0.06, 0.07],
-    "Drywall (Standard)": [0.29, 0.10, 0.05, 0.04, 0.07, 0.09],
-    "Heavy Carpet (Absorptive)": [0.02, 0.06, 0.14, 0.37, 0.60, 0.65],
-    "Acoustic Foam (Absorptive)": [0.08, 0.25, 0.60, 0.90, 0.95, 0.90],
-    "Fiberglass 4in (Absorptive)": [0.25, 0.90, 1.10, 1.05, 1.00, 1.00],
-    "Velvet Curtains (Absorptive)": [0.07, 0.31, 0.49, 0.75, 0.70, 0.60]
+    # REFLECTIVE MATERIALS (bounce sound back - not great for acoustics)
+    "Concrete (Reflective)": [0.01, 0.01, 0.01, 0.02, 0.02, 0.03],  # Very reflective, absorbs almost no sound
+    "Brick Wall (Reflective)": [0.03, 0.03, 0.03, 0.04, 0.05, 0.07],  # Hard surfaces reflect sound
+    "Glass (Reflective)": [0.35, 0.25, 0.18, 0.12, 0.07, 0.04],  # Glass bounces a lot of sound
+    "Wood Floor (Reflective)": [0.15, 0.11, 0.10, 0.07, 0.06, 0.07],  # Hard wood is somewhat reflective
+    "Drywall (Standard)": [0.29, 0.10, 0.05, 0.04, 0.07, 0.09],  # Standard wall material
+    
+    # ABSORPTIVE MATERIALS (soak up sound - good for acoustics)
+    "Heavy Carpet (Absorptive)": [0.02, 0.06, 0.14, 0.37, 0.60, 0.65],  # Absorbs more sound than reflective
+    "Acoustic Foam (Absorptive)": [0.08, 0.25, 0.60, 0.90, 0.95, 0.90],  # Special foam designed to absorb sound
+    "Fiberglass 4in (Absorptive)": [0.25, 0.90, 1.10, 1.05, 1.00, 1.00],  # Very thick and very absorptive
+    "Velvet Curtains (Absorptive)": [0.07, 0.31, 0.49, 0.75, 0.70, 0.60]  # Soft fabric absorbs sound
 }
-OCTAVE_BANDS = ['125', '250', '500', '1k', '2k', '4k']
-SPEED_OF_SOUND = 343.0
 
-# --- 3. PHYSICS ENGINE FUNCTIONS ---
+# OCTAVE BANDS
+# These are specific frequencies (Hz = cycles per second) that audio engineers use
+# They divide the hearing range into bands - think of it like dividing a piano keyboard into sections
+OCTAVE_BANDS = ['125', '250', '500', '1k', '2k', '4k']  # From low to high frequency
+
+# SPEED OF SOUND
+# How fast sound travels through air at room temperature
+# This is a physics constant - you use it in many acoustic calculations
+SPEED_OF_SOUND = 343.0  # meters per second at 20°C
+
+
+# ============================================================================
+# SECTION 4: PHYSICS ENGINE FUNCTIONS
+# These functions calculate acoustic properties based on physics principles
+# ============================================================================
+
 def get_room_ratios(L, W, H):
-    dims = sorted([L, W, H], reverse=True) # L > W > H
-    return dims[1]/dims[2], dims[0]/dims[2] # W/H, L/H
+    """
+    Calculate room dimension ratios to check if a room has good acoustic properties.
+    
+    Explanation for beginners:
+    - Room ratios (proportions) affect how sound waves move and bounce
+    - If a room is too cube-shaped or has bad ratios, it creates acoustic problems
+    - This function sorts dimensions and calculates ratios used to check stability
+    
+    Args:
+        L: Length of room (meters)
+        W: Width of room (meters)
+        H: Height of room (meters)
+    
+    Returns:
+        Two ratios: (Width/Height, Length/Height)
+    """
+    dims = sorted([L, W, H], reverse=True)  # Sort from largest to smallest: [largest, middle, smallest]
+    return dims[1]/dims[2], dims[0]/dims[2]  # Return: middle/smallest and largest/smallest
+
 
 def check_bolt_area(x, y):
-    # Simplified bounding box check for the UI status
+    """
+    Check if room ratios fall within the "Bolt area" - a zone of good acoustic ratios.
+    
+    Explanation for beginners:
+    - The Bolt area is a specific zone on a graph where room ratios sound good
+    - It's named after acoustician Beranek Bolt
+    - If your room point falls inside this zone, you're in good shape acoustically
+    - If outside, your room proportions might cause acoustic problems
+    
+    Args:
+        x: Width to Height ratio (first number)
+        y: Length to Height ratio (second number)
+    
+    Returns:
+        (status_text, color_indicator) - either "Stable Zone" or "Unstable"
+    """
+    # Check if the x,y point is inside the Bolt area polygon (the stable zone)
+    # These numbers define the corners of a rectangle on the graph
     if 1.14 < x < 1.6 and 1.12 < y < 1.54:
-        return "Stable Zone", "normal"
-    return "Unstable", "inverse"
+        return "Stable Zone", "normal"  # Point is inside - good acoustics!
+    return "Unstable", "inverse"  # Point is outside - potential acoustic issues
+
 
 def calculate_modes(L, W, H, max_freq=300):
-    modes = []
+    """
+    Calculate MODAL FREQUENCIES - frequencies where sound waves get "stuck" in the room.
+    
+    Explanation for beginners:
+    - Sound in a room doesn't move randomly - it creates standing patterns (like waves on a guitar string)
+    - Each length, width, and height of the room creates its own resonance frequencies
+    - At these frequencies, certain spots get VERY loud and others are quiet (problem!)
+    - This function calculates all modes from 0-300 Hz, which is where most problems happen
+    
+    How it works:
+    - The formula: f = (c/2) * (n / dimension)
+    - c = speed of sound, n = mode number (1, 2, 3...), dimension = room size
+    - Each room dimension (L, W, H) creates its own set of modes
+    - We calculate modes for each axis with different colors for easy visualization
+    
+    Args:
+        L: Length (meters)
+        W: Width (meters)  
+        H: Height (meters)
+        max_freq: Only show modes below this frequency (default 300 Hz)
+    
+    Returns:
+        DataFrame with columns: Freq (Hz), Axis (which direction), Color (for plotting)
+    """
+    modes = []  # Empty list to store all our calculated modes
+    
+    # Loop from mode 1 to mode 4 (higher modes are less important)
     for n in range(1, 5):
+        # Calculate mode along LENGTH axis (color = red)
+        # Formula: frequency = (speed_of_sound / 2) * (mode_number / length)
         modes.append({'Freq': (SPEED_OF_SOUND/2)*(n/L), 'Axis': 'Length', 'Color': '#ef4444'})
+        
+        # Calculate mode along WIDTH axis (color = green)
         modes.append({'Freq': (SPEED_OF_SOUND/2)*(n/W), 'Axis': 'Width', 'Color': '#22c55e'})
+        
+        # Calculate mode along HEIGHT axis (color = blue)
         modes.append({'Freq': (SPEED_OF_SOUND/2)*(n/H), 'Axis': 'Height', 'Color': '#3b82f6'})
     
+    # Convert the list of modes into a nice table (DataFrame)
     df = pd.DataFrame(modes)
+    
+    # Filter to keep only modes below max_freq and sort from lowest to highest frequency
     return df[df['Freq'] <= max_freq].sort_values(by='Freq')
 
+
 def calculate_sbir_curve(distances):
+    """
+    Calculate SBIR (Speaker-Boundary Interference Response) curve.
+    
+    Explanation for beginners:
+    - SBIR is what happens when sound from a speaker bounces off nearby walls
+    - When direct sound and reflected sound arrive at the same time, they cancel each other out
+    - This creates a "notch" (dip) in the frequency response at specific frequencies
+    - These problem frequencies are calculated by: f = c / (4 * distance_to_wall)
+    - This function simulates this acoustic effect across a range of frequencies
+    
+    Args:
+        distances: List of distances to walls [distance_to_front, distance_to_side, distance_to_floor]
+    
+    Returns:
+        (frequencies, response) - two arrays: frequencies (Hz) and amplitude response (dB)
+    """
+    # Create a list of important frequencies to analyze (audio range)
     freqs = np.array([40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800])
+    
+    # Create an array of response values, all starting at zero
+    # We'll subtract from this array to show the "dips" (problem areas)
     resp = np.zeros(len(freqs))
     
+    # For each distance to a wall, calculate the cancellation dip
     for d in distances:
-        if d > 0:
+        if d > 0:  # Only process if distance is greater than zero
+            # Calculate the frequency where cancellation happens
+            # Quarter-wavelength cancellation: f = c / (4 * distance)
+            # This is the frequency most affected by this wall distance
             f_cancel = SPEED_OF_SOUND / (4 * d)
-            # Simulate a notch filter dip
+            
+            # Loop through each frequency in our list
             for i, f in enumerate(freqs):
+                # Calculate how far this frequency is from the problem frequency
                 diff = abs(f - f_cancel)
+                
+                # Create a dip at the problem frequency (and some surrounding area)
+                # 0.3 means the dip affects frequencies within 30% of the problem frequency
                 if diff < (f_cancel * 0.3):
+                    # Subtract from response: bigger dip right at f_cancel, smaller dip around it
+                    # The response shows negative dB = quieter
                     resp[i] -= 10 * (1 - (diff/(f_cancel*0.3)))
+    
+    # Make sure response doesn't go lower than -20 dB (realistic limit)
     return freqs, np.maximum(resp, -20)
 
-# --- 4. APP LAYOUT & UI ---
 
-# Sidebar
+
+# ============================================================================
+# SECTION 5: APP LAYOUT & USER INTERFACE
+# This is where we build the actual web page that users interact with
+# ============================================================================
+
+# --- SIDEBAR (Left panel) ---
+# The sidebar is an optional panel on the left side of most web apps
+# We use "with st.sidebar:" to tell Streamlit to put everything inside in the sidebar
 with st.sidebar:
-    st.markdown("## 🌊 ADA")
-    st.caption("Acoustic Design Assistant • Prototype")
-    st.markdown("---")
-    st.markdown("**Project Phase:** Core Logic Sprints")
-    st.markdown("**Hot Reloading:** Active ⚡")
+    st.markdown("## 🌊 ADA")  # Main title for the app with an emoji
+    st.caption("Acoustic Design Assistant • Prototype")  # Smaller subtitle explaining what it is
+    st.markdown("---")  # This creates a horizontal line to separate sections
+    st.markdown("**Project Phase:** Core Logic Sprints")  # Show what stage the project is in
+    st.markdown("**Hot Reloading:** Active ⚡")  # Show that code changes update instantly
     
     # Store global materials state if we want to add presets later
-    st.markdown("---")
+    # This is a comment for future development
+    st.markdown("---")  # Another divider line
+    # This is an info box (💡 = light bulb) giving users helpful tips
     st.info("💡 Adjust the room dimensions in the main panel to see real-time updates across all tabs.")
 
-# Main Content Header
-st.title("Room Geometry")
+
+# --- MAIN CONTENT AREA - HEADER & ROOM INPUTS ---
+# Keep a breathable layout without making the section feel disconnected
+# st.title() creates a big heading at the top of the page
+st.title("Room Geometry")  # Title of this section
+st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+
+# Create 5 columns with different widths to organize the layout nicely
+# [2, 2, 2, 1, 1] means: first 3 columns are equal width, last 2 are half that width
 col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 1, 1])
 
+# --- INPUT CONTROLS: ROOM DIMENSIONS ---
+# Sliders let users adjust values by dragging or typing
+# st.slider(label, min, max, default, step_size)
 with col1:
+    # Slider for room LENGTH
+    # Users can pick any value from 2.0 to 15.0 meters
+    # Default value is 5.0, and smallest change is 0.1 meters
     L = st.slider("Length (m)", 2.0, 15.0, 5.0, 0.1)
+
 with col2:
+    # Slider for room WIDTH
     W = st.slider("Width (m)", 2.0, 15.0, 4.0, 0.1)
+
 with col3:
+    # Slider for room HEIGHT
     H = st.slider("Height (m)", 2.0, 8.0, 3.0, 0.1)
 
+# --- CALCULATE ROOM PROPERTIES ---
+# Now that we have L, W, H, we can calculate properties of the room
+
+# Volume = length × width × height (basic geometry)
+# Think of it like: how much air fits in this room?
 volume = L * W * H
+
+# Surface Area is the total area of all walls, floor, and ceiling
+# Formula: 2 × (LW + LH + WH)
+# - LW = floor and ceiling area (length × width) × 2 surfaces
+# - LH = front and back walls (length × height) × 2 surfaces
+# - WH = left and right walls (width × height) × 2 surfaces
+# Then multiply by 2 to get both sides
 surface_area = 2 * (L*W + L*H + W*H)
 
+# --- DISPLAY ROOM METRICS ---
+# Metrics are boxes that display important numbers
 with col4:
-    st.metric("Volume", f"{volume:.1f} m³")
+    # Display the calculated volume
+    st.metric("Volume", f"{volume:.1f} m³")  # .1f means show 1 decimal place
+
 with col5:
+    # Display the calculated surface area
     st.metric("Surface", f"{surface_area:.1f} m²")
 
+# Keep a light amount of separation before the next section
+st.markdown("<div style='height: 0.75rem;'></div>", unsafe_allow_html=True)
+
+# Draw a horizontal dividing line
 st.markdown("---")
 
-# Tabs
+
+# --- CREATE TABS ---
+# Tabs are like pages within a page - clicking each tab shows different content
+# st.tabs() creates the tab buttons at the top
 tab_modes, tab_rt60, tab_sbir = st.tabs([
-    "📊 Modal Analysis", 
-    "⏱️ RT60 Calculator", 
-    "📡 SBIR Analysis"
+    "📊 Modal Analysis",  # Tab 1: Analyze room modes
+    "⏱️ RT60 Calculator",  # Tab 2: Calculate how long sound lasts in the room
+    "📡 SBIR Analysis"  # Tab 3: Analyze speaker-wall interference
 ])
 
-# === TAB 1: MODAL ANALYSIS ===
+# ============================================================================
+# TAB 1: MODAL ANALYSIS
+# This tab shows low-frequency acoustic problems in the room
+# ============================================================================
 with tab_modes:
+    # Tab heading
     st.markdown("### Low-Frequency Behavior (0-300Hz)")
+    # Explain why we care about low frequencies:
+    # Low frequencies (0-300 Hz) are most problematic in rooms because the wavelengths are large
+    # This means standing waves and modes have strong effects
     
+    # Create 2 columns to show charts side by side
     mc1, mc2 = st.columns(2)
     
+    # ===== LEFT COLUMN: BOLT AREA DIAGRAM =====
     with mc1:
         st.markdown("**Bolt Area Stability Zone**")
+        
+        # Calculate this room's ratio and check if it's in the Bolt area
         x_ratio, y_ratio = get_room_ratios(L, W, H)
         status, delta_color = check_bolt_area(x_ratio, y_ratio)
         
-        # Plotly Bolt Area
-        fig_bolt = go.Figure()
-        # Bolt Polygon
+        # Create an interactive chart using Plotly
+        fig_bolt = go.Figure()  # Start a new figure (blank canvas for drawing)
+        
+        # Draw the BOLT AREA POLYGON (the green stable zone)
+        # This creates a filled shape with specific corner points
         fig_bolt.add_trace(go.Scatter(
-            x=[1.14, 1.28, 1.60, 1.50, 1.14], 
-            y=[1.39, 1.54, 1.28, 1.12, 1.39],
-            fill='toself', fillcolor='rgba(34, 197, 94, 0.2)',
-            line=dict(color='#22c55e', width=2),
-            name="Stable Zone", hoverinfo="skip"
+            x=[1.14, 1.28, 1.60, 1.50, 1.14],  # X coordinates of the polygon corners (closes at end)
+            y=[1.39, 1.54, 1.28, 1.12, 1.39],  # Y coordinates of the polygon corners
+            fill='toself',  # Fill the area inside the shape
+            fillcolor='rgba(34, 197, 94, 0.2)',  # Light green fill color (semi-transparent)
+            line=dict(color='#22c55e', width=2),  # Green border line
+            name="Stable Zone",  # Name for the legend
+            hoverinfo="skip"  # Don't show hover info when mouse is over the zone
         ))
-        # Current Room Point
+        
+        # Draw YOUR ROOM'S CURRENT POSITION (red dot)
+        # This shows where your room's ratios fall on the graph
         fig_bolt.add_trace(go.Scatter(
-            x=[x_ratio], y=[y_ratio],
-            mode='markers', marker=dict(color='#ef4444', size=12, line=dict(color='white', width=2)),
-            name="Current Room"
+            x=[x_ratio],  # X position of the point (width/height ratio)
+            y=[y_ratio],  # Y position of the point (length/height ratio)
+            mode='markers',  # Show as a point (not a line)
+            marker=dict(
+                color='#ef4444',  # Red color (stands out)
+                size=12,  # Size of the dot
+                line=dict(color='white', width=2)  # White outline around the dot
+            ),
+            name="Current Room"  # Name for the legend
         ))
+        
+        # Configure the chart appearance and axes
         fig_bolt.update_layout(
-            template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-            xaxis_title="Width / Height Ratio", yaxis_title="Length / Height Ratio",
-            xaxis=dict(range=[0.8, 2.0]), yaxis=dict(range=[0.8, 2.0]),
-            margin=dict(l=0, r=0, t=0, b=0), height=350
+            template="plotly_dark",  # Use dark theme (matches our app's dark style)
+            plot_bgcolor="rgba(0,0,0,0)",  # Transparent background
+            paper_bgcolor="rgba(0,0,0,0)",  # Transparent paper background
+            xaxis_title="Width / Height Ratio",  # Label for horizontal axis
+            yaxis_title="Length / Height Ratio",  # Label for vertical axis
+            xaxis=dict(range=[0.8, 2.0]),  # Show this range on X axis
+            yaxis=dict(range=[0.8, 2.0]),  # Show this range on Y axis
+            margin=dict(l=0, r=0, t=0, b=0),  # Minimize margins (use full space)
+            height=350,  # Height of the chart in pixels
+            legend=dict(font=dict(color='#d1d5db'))  # Light gray legend text
         )
+        
+        # Display the chart in the Streamlit app
         st.plotly_chart(fig_bolt, use_container_width=True)
+        
+        # Show status: is the room in the Bolt area or unstable?
         st.metric("Status", status, delta="Ratio Check", delta_color=delta_color)
 
+    # ===== RIGHT COLUMN: MODAL FREQUENCIES CHART =====
     with mc2:
         st.markdown("**Axial Modal Frequencies**")
+        
+        # Calculate all the modal frequencies for this room
         df_modes = calculate_modes(L, W, H)
         
-        # Plotly Bar Chart (Stem Plot style)
-        fig_modes = go.Figure()
+        # Create a new chart for modal frequencies
+        fig_modes = go.Figure()  # Start new figure
+        
+        # Add bars for each axis (Length, Width, Height) with different colors
+        # Each axis (L, W, H) creates its own set of mode frequencies
         for axis, color in zip(['Length', 'Width', 'Height'], ['#ef4444', '#22c55e', '#3b82f6']):
+            # Filter data to get only modes from this axis
             axis_data = df_modes[df_modes['Axis'] == axis]
+            
+            # Add bars to the chart
             fig_modes.add_trace(go.Bar(
-                x=axis_data['Freq'], y=[1]*len(axis_data),
-                marker_color=color, name=axis, width=3
+                x=axis_data['Freq'],  # X position = frequency
+                y=[1]*len(axis_data),  # Y value = 1 for all (just showing presence)
+                marker_color=color,  # Color specific to this axis
+                name=axis,  # Name for legend (Length/Width/Height)
+                width=3  # Width of each bar
             ))
+        
+        # Configure the chart
         fig_modes.update_layout(
-            template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-            xaxis_title="Frequency (Hz)", yaxis=dict(showticklabels=False, range=[0, 1.1]),
-            margin=dict(l=0, r=0, t=0, b=0), height=350, barmode='overlay'
+            template="plotly_dark",  # Dark theme
+            plot_bgcolor="rgba(0,0,0,0)",  # Transparent
+            paper_bgcolor="rgba(0,0,0,0)",  # Transparent
+            xaxis_title="Frequency (Hz)",  # X axis label
+            yaxis=dict(showticklabels=False, range=[0, 1.1]),  # Hide Y axis labels
+            margin=dict(l=0, r=0, t=0, b=0),  # No margins
+            height=350,  # Chart height
+            barmode='overlay',  # Stack bars on top of each other
+            legend=dict(font=dict(color='#d1d5db'))  # Gray legend
         )
+        
+        # Display the modal analysis chart
         st.plotly_chart(fig_modes, use_container_width=True)
     
+    # Show the mathematical formula for modal frequencies
     st.info("💡 **Glass Box Physics:** The Rayleigh Equation")
+    # This displays the physics formula that calculates modes
     st.latex(r"f = \frac{c}{2} \sqrt{\left(\frac{n_x}{L}\right)^2 + \left(\frac{n_y}{W}\right)^2 + \left(\frac{n_z}{H}\right)^2}")
 
-# === TAB 2: RT60 CALCULATOR ===
+
+
+# ============================================================================
+# TAB 2: RT60 CALCULATOR
+# This tab calculates how long sound takes to fade away in the room
+# ============================================================================
 with tab_rt60:
     st.markdown("### Reverberation Time")
+    # RT60 is how long it takes for sound to become 60 decibels quieter
+    # (60 dB is considered "silent" - you can't hear it anymore)
+    # Important: shorter RT = room absorbs sound well, longer RT = room is live/echoey
     
+    # Create 3 columns for material selection
     rc1, rc2, rc3 = st.columns(3)
-    with rc1: mat_wall = st.selectbox("Walls", list(MATERIALS.keys()), index=4)
-    with rc2: mat_floor = st.selectbox("Floor", list(MATERIALS.keys()), index=3)
-    with rc3: mat_ceil = st.selectbox("Ceiling", list(MATERIALS.keys()), index=4)
     
+    # --- MATERIAL SELECTORS ---
+    with rc1:
+        # Dropdown menu to choose wall material
+        # index=4 means "Drywall (Standard)" is selected by default
+        mat_wall = st.selectbox("Walls", list(MATERIALS.keys()), index=4)
+    
+    with rc2:
+        # Dropdown for floor material
+        # index=3 means "Wood Floor (Reflective)" is selected by default
+        mat_floor = st.selectbox("Floor", list(MATERIALS.keys()), index=3)
+    
+    with rc3:
+        # Dropdown for ceiling material
+        # index=4 means "Drywall (Standard)" is selected by default
+        mat_ceil = st.selectbox("Ceiling", list(MATERIALS.keys()), index=4)
+    
+    # --- GET ABSORPTION COEFFICIENTS ---
+    # Convert the selected materials into arrays of absorption values
+    # Each material has 6 values (one for each frequency band)
     a_wall = np.array(MATERIALS[mat_wall])
     a_floor = np.array(MATERIALS[mat_floor])
     a_ceil = np.array(MATERIALS[mat_ceil])
     
-    area_walls = 2 * (L*H + W*H)
-    area_floor = L * W
-    area_ceil = L * W
+    # --- CALCULATE SURFACE AREAS ---
+    # We need the area of each surface to calculate total absorption
+    area_walls = 2 * (L*H + W*H)  # All 4 walls (front, back, left, right)
+    area_floor = L * W  # Bottom surface
+    area_ceil = L * W  # Top surface
     
-    # Target RT60 (IEC standard approximation)
+    # --- TARGET RT60 ---
+    # Different rooms need different RT60 values for good acoustics
+    # This uses a standard formula: RT60 = 0.25 × (V/100)^(1/3)
+    # It's an approximation of good acoustic conditions
     target_rt = 0.25 * (volume/100)**(1/3)
     
-    sabine_rt = []
-    eyring_rt = []
+    # --- CALCULATE RT60 FOR EACH FREQUENCY BAND ---
+    # Create empty lists to store calculations for each frequency
+    sabine_rt = []  # Using Sabine formula (common approximation)
+    eyring_rt = []  # Using Eyring formula (more accurate for absorbent rooms)
     
+    # Loop through each of the 6 frequency bands
     for i in range(6):
+        # Calculate total absorption at this frequency
+        # (absorption coefficient) × (surface area) for each surface, then add them up
         abs_total = (a_wall[i]*area_walls) + (a_floor[i]*area_floor) + (a_ceil[i]*area_ceil)
+        
+        # Calculate average absorption coefficient across all surfaces
+        # This tells us what percentage of sound is absorbed on average
         alpha_avg = abs_total / surface_area
         
-        # Sabine
+        # --- SABINE FORMULA ---
+        # RT60 = (0.161 × Volume) / (Total Absorption)
+        # 0.161 is a constant that converts units correctly
+        # This is the most commonly used formula in practice
         sabine_rt.append((0.161 * volume) / abs_total)
-        # Eyring
+        
+        # --- EYRING FORMULA ---
+        # RT60 = (0.161 × Volume) / (-Surface Area × ln(1 - alpha_avg))
+        # This formula is more accurate when the room has a lot of absorption
+        # ln() is the natural logarithm (math function)
+        # We check that alpha_avg < 0.99 to avoid math errors
         e_rt = (0.161 * volume) / (-surface_area * np.log(1 - alpha_avg)) if alpha_avg < 0.99 else 0
         eyring_rt.append(e_rt)
     
-    # Plotly Line Chart
-    fig_rt = go.Figure()
-    fig_rt.add_trace(go.Scatter(x=OCTAVE_BANDS, y=sabine_rt, mode='lines+markers', name='Sabine', line=dict(color='#3b82f6', width=3)))
-    fig_rt.add_trace(go.Scatter(x=OCTAVE_BANDS, y=eyring_rt, mode='lines+markers', name='Eyring', line=dict(color='#8b5cf6', width=3, dash='dash')))
-    fig_rt.add_trace(go.Scatter(x=OCTAVE_BANDS, y=[target_rt]*6, mode='lines', name='Target', line=dict(color='#22c55e', width=2)))
+    # --- CREATE VISUALIZATION CHART ---
+    fig_rt = go.Figure()  # Create new figure
     
+    # Add SABINE line (solid blue line)
+    fig_rt.add_trace(go.Scatter(
+        x=OCTAVE_BANDS,  # Frequency bands on X axis
+        y=sabine_rt,  # Calculated RT60 values on Y axis
+        mode='lines+markers',  # Show both lines and dots
+        name='Sabine',  # Name for legend
+        line=dict(color='#3b82f6', width=3)  # Blue solid line
+    ))
+    
+    # Add EYRING line (dashed purple line)
+    fig_rt.add_trace(go.Scatter(
+        x=OCTAVE_BANDS,
+        y=eyring_rt,
+        mode='lines+markers',
+        name='Eyring',
+        line=dict(color='#8b5cf6', width=3, dash='dash')  # Purple dashed line
+    ))
+    
+    # Add TARGET line (green line - ideal RT60)
+    fig_rt.add_trace(go.Scatter(
+        x=OCTAVE_BANDS,
+        y=[target_rt]*6,  # Same value across all frequencies
+        mode='lines',
+        name='Target',  # The recommended RT60 for this room
+        line=dict(color='#22c55e', width=2)  # Green
+    ))
+    
+    # Configure the chart appearance
     fig_rt.update_layout(
-        template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-        yaxis_title="Time (Seconds)", yaxis=dict(rangemode='tozero'),
-        margin=dict(l=0, r=0, t=30, b=0), height=350
+        template="plotly_dark",  # Dark theme
+        plot_bgcolor="rgba(0,0,0,0)",  # Transparent background
+        paper_bgcolor="rgba(0,0,0,0)",  # Transparent paper
+        yaxis_title="Time (Seconds)",  # Y axis shows time
+        yaxis=dict(rangemode='tozero'),  # Start Y axis from 0
+        margin=dict(l=0, r=0, t=30, b=0),  # Minimal margins
+        height=350  # Chart height
     )
+    
+    # Display the RT60 chart
     st.plotly_chart(fig_rt, use_container_width=True)
     
+    # Show the Sabine formula used in the calculation
     st.info("💡 **Glass Box Physics:** The Sabine Formula")
     st.latex(r"RT_{60} = \frac{0.161 \times V}{\sum (S_i \times \alpha_i)}")
 
-# === TAB 3: SBIR ANALYSIS ===
+
+
+# ============================================================================
+# TAB 3: SBIR ANALYSIS
+# This tab analyzes Speaker-Boundary Interference Response (SBIR)
+# ============================================================================
 with tab_sbir:
     st.markdown("### Speaker-Boundary Interference Response")
+    # SBIR happens when speaker sound bounces off nearby walls
+    # Direct sound + reflected sound = cancellation (quiet) or reinforcement (loud)
+    # This creates frequency-dependent problems in the bass range
     
+    # Create 3 columns for speaker distance controls
     sc1, sc2, sc3 = st.columns(3)
-    with sc1: d_front = st.slider("Dist to Front Wall (m)", 0.1, 5.0, 1.0, 0.1)
-    with sc2: d_side = st.slider("Dist to Side Wall (m)", 0.1, 5.0, 0.8, 0.1)
-    with sc3: d_floor = st.slider("Dist to Floor (m)", 0.1, 3.0, 1.2, 0.1)
     
+    # --- SPEAKER DISTANCE SLIDERS ---
+    with sc1:
+        # How far the speaker is from the front wall (in meters)
+        # Closer to wall = lower problem frequencies
+        d_front = st.slider("Dist to Front Wall (m)", 0.1, 5.0, 1.0, 0.1)
+    
+    with sc2:
+        # How far the speaker is from the side wall
+        d_side = st.slider("Dist to Side Wall (m)", 0.1, 5.0, 0.8, 0.1)
+    
+    with sc3:
+        # How far the speaker is from the floor
+        d_floor = st.slider("Dist to Floor (m)", 0.1, 3.0, 1.2, 0.1)
+    
+    # --- CALCULATE PROBLEM FREQUENCIES ---
+    # Using the quarter-wavelength formula: f = c / (4 * distance)
+    # These are the frequencies most affected by SBIR
+    
+    # Problem frequency from front wall
+    # If result would be division by zero, use 0 instead
     f_front = round(SPEED_OF_SOUND / (4 * d_front)) if d_front > 0 else 0
+    
+    # Problem frequency from side wall
     f_side = round(SPEED_OF_SOUND / (4 * d_side)) if d_side > 0 else 0
+    
+    # Problem frequency from floor
     f_floor = round(SPEED_OF_SOUND / (4 * d_floor)) if d_floor > 0 else 0
     
+    # --- DISPLAY PROBLEM FREQUENCIES ---
+    # Show each problem frequency in a nice box
     mc1, mc2, mc3 = st.columns(3)
-    mc1.metric("Front Wall Dip", f"{f_front} Hz")
+    mc1.metric("Front Wall Dip", f"{f_front} Hz")  # Dip = frequency that gets quiet
     mc2.metric("Side Wall Dip", f"{f_side} Hz")
     mc3.metric("Floor Dip", f"{f_floor} Hz")
     
+    # --- CALCULATE SBIR CURVE ---
+    # This calculates the frequency response (amplitude vs frequency) with SBIR effects
+    # Pass all three distances to the function
     freqs, resp = calculate_sbir_curve([d_front, d_side, d_floor])
     
-    fig_sbir = go.Figure()
+    # --- CREATE VISUALIZATION ---
+    fig_sbir = go.Figure()  # New figure
+    
+    # Add area fill chart showing the SBIR effect
     fig_sbir.add_trace(go.Scatter(
-        x=freqs, y=resp, mode='lines', fill='tozeroy',
-        line=dict(color='#ef4444', width=3), fillcolor='rgba(239, 68, 68, 0.2)'
+        x=freqs,  # Frequencies on X axis
+        y=resp,  # Amplitude response on Y axis (in dB, negative = quieter)
+        mode='lines',  # Connect points with lines
+        fill='tozeroy',  # Fill area from line down to zero
+        line=dict(color='#ef4444', width=3),  # Red line
+        fillcolor='rgba(239, 68, 68, 0.2)'  # Semi-transparent red fill
     ))
     
+    # Configure the chart appearance
     fig_sbir.update_layout(
-        template="plotly_dark", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-        xaxis_title="Frequency (Hz)", yaxis_title="Amplitude (dB)",
-        xaxis=dict(type='log', tickvals=[40, 60, 100, 200, 400, 800]), yaxis=dict(range=[-20, 2]),
-        margin=dict(l=0, r=0, t=30, b=0), height=300
+        template="plotly_dark",  # Dark theme
+        plot_bgcolor="rgba(0,0,0,0)",  # Transparent background
+        paper_bgcolor="rgba(0,0,0,0)",  # Transparent paper
+        xaxis_title="Frequency (Hz)",  # X axis label
+        yaxis_title="Amplitude (dB)",  # Y axis label (dB = decibels, measure of loudness)
+        # Use logarithmic frequency scale (standard for audio) with specific tick values
+        xaxis=dict(type='log', tickvals=[40, 60, 100, 200, 400, 800]),
+        yaxis=dict(range=[-20, 2]),  # Y axis from -20 dB to +2 dB
+        margin=dict(l=0, r=0, t=30, b=0),  # Minimal margins
+        height=300  # Chart height
     )
+    
+    # Display the SBIR analysis chart
     st.plotly_chart(fig_sbir, use_container_width=True)
     
+    # Show the physics formula behind the quarter-wavelength calculation
     st.info("💡 **Glass Box Physics:** Quarter-Wavelength Cancellation")
     st.latex(r"f_{cancel} = \frac{c}{4d}")
