@@ -10,7 +10,6 @@ import numpy as np               # For fast math calculations with lists of numb
 import pandas as pd              # For organizing data into tables (like Excel)
 import plotly.graph_objects as go  # For creating interactive charts and graphs
 import plotly.express as px      # A simpler way to make charts with plotly
-
 # ============================================================================
 # SECTION 2: PAGE CONFIGURATION & STYLING
 # This sets up how the web page will look and behave
@@ -76,7 +75,7 @@ st.markdown("""
     /* The tabs are the "📊 Modal Analysis", "⏱️ RT60 Calculator", etc buttons at top */
     .stTabs [data-baseweb="tab-list"] {
         gap: 24px;  /* Space between tab buttons */
-        background-color: #1e293b;  /* Dark blue background for tab area */
+        background-color: #15223E;  /* Match the requested dark blue tone */
         padding: 10px 20px;  /* Space inside the tab area */
         border-radius: 10px;  /* Rounded corners */
     }
@@ -151,7 +150,43 @@ SPEED_OF_SOUND = 343.0  # meters per second at 20°C
 
 
 # ============================================================================
-# SECTION 4: PHYSICS ENGINE FUNCTIONS
+# SECTION 4: REUSABLE GLASS BOX CALCULATION CARD
+# This renders the calculation as an explanatory info card with inputs and factors
+# ============================================================================
+
+def render_glass_box(title, inputs, formula_latex, formula_elements, substitution, calculation_steps):
+    """
+    Reusable function to render a Glass Box calculation card.
+    It emphasizes the key factors behind the calculation and the workflow used to reach the result.
+    """
+    with st.container(border=True):
+        st.subheader(title)
+
+        st.markdown("**How this calculation is built**")
+        st.write("This card explains the main factors that influence the result and shows the calculation path step by step.")
+
+        st.markdown("**Key factors**")
+        factor_items = [f"- **{k}:** {v}" for k, v in formula_elements.items()]
+        st.write("\n".join(factor_items))
+
+        st.markdown("**Inputs**")
+        input_string = "\n".join([f"{k}: {v}" for k, v in inputs.items()])
+        st.code(input_string, language="plaintext")
+
+        st.markdown("**Formula**")
+        st.latex(formula_latex)
+
+        with st.expander("Show substitution and steps"):
+            st.markdown("**Substitution**")
+            st.code(substitution, language="plaintext")
+
+            st.markdown("**Calculation Steps**")
+            steps_string = "\n".join(calculation_steps)
+            st.code(steps_string, language="plaintext")
+
+
+# ============================================================================
+# SECTION 5: PHYSICS ENGINE FUNCTIONS
 # These functions calculate acoustic properties based on physics principles
 # ============================================================================
 
@@ -318,6 +353,9 @@ with st.sidebar:
 
 
 # --- MAIN CONTENT AREA - HEADER & ROOM INPUTS ---
+# Add a prominent banner at the very top of the main layout
+st.info("🎧 Acoustic Design Assistant", icon="🎧")
+
 # Keep a breathable layout without making the section feel disconnected
 # st.title() creates a big heading at the top of the page
 st.title("Room Geometry")  # Title of this section
@@ -497,11 +535,40 @@ with tab_modes:
         # Display the modal analysis chart
         st.plotly_chart(fig_modes, use_container_width=True)
     
-    # Show the mathematical formula for modal frequencies
-    st.info("💡 **Glass Box Physics:** The Rayleigh Equation")
-    # This displays the physics formula that calculates modes
-    st.latex(r"f = \frac{c}{2} \sqrt{\left(\frac{n_x}{L}\right)^2 + \left(\frac{n_y}{W}\right)^2 + \left(\frac{n_z}{H}\right)^2}")
+    first_mode = round(SPEED_OF_SOUND / (2 * L), 1)
+    render_glass_box(
+        title="Rayleigh Equation (Axial Modes)",
+        inputs={
+            "Length (L)": f"{L:.2f} m",
+            "Width (W)": f"{W:.2f} m",
+            "Height (H)": f"{H:.2f} m",
+            "Mode number": "1"
+        },
+        formula_latex=r"f = \frac{c}{2} \sqrt{\left(\frac{n_x}{L}\right)^2 + \left(\frac{n_y}{W}\right)^2 + \left(\frac{n_z}{H}\right)^2}",
+        formula_elements={
+            "f": "Frequency (Hz)",
+            "c": "Speed of sound in air",
+            "L, W, H": "Room dimensions",
+            "n_x, n_y, n_z": "Mode numbers"
+        },
+        substitution=rf"f = \frac{{343}}{{2}} \sqrt{{\left(\frac{{1}}{{{L:.2f}}}\right)^2 + \left(\frac{{0}}{{{W:.2f}}}\right)^2 + \left(\frac{{0}}{{{H:.2f}}}\right)^2}}",
+        calculation_steps=[
+            f"Use the first axial mode along the room length: {first_mode:.1f} Hz",
+            "Compare the result against the room's low-frequency behavior and potential resonance."
+        ]
+    )
 
+    # Add two native informational cards beneath the Glass Box section
+    col1, col2 = st.columns(2)
+    with col1:
+        with st.container(border=True):
+            st.markdown("**Modal Analysis Insights**")
+            st.write("This panel highlights how room proportions influence resonant modes and low-frequency behavior.")
+
+    with col2:
+        with st.container(border=True):
+            st.markdown("**Room Geometry Notes**")
+            st.write("Adjust the dimensions to see how modal spacing shifts as the room becomes more or less proportionate.")
 
 
 # ============================================================================
@@ -625,10 +692,39 @@ with tab_rt60:
     # Display the RT60 chart
     st.plotly_chart(fig_rt, use_container_width=True)
     
-    # Show the Sabine formula used in the calculation
-    st.info("💡 **Glass Box Physics:** The Sabine Formula")
-    st.latex(r"RT_{60} = \frac{0.161 \times V}{\sum (S_i \times \alpha_i)}")
+    render_glass_box(
+        title="Sabine Formula",
+        inputs={
+            "Volume (V)": f"{volume:.1f} m³",
+            "Total absorption (A)": f"{surface_area:.1f} m²",
+            "Room type": "Rectangular enclosure"
+        },
+        formula_latex=r"RT_{60} = \frac{0.161 \cdot V}{A}",
+        formula_elements={
+            "RT_{60}": "Reverberation time (seconds)",
+            "V": "Room volume",
+            "A": "Total absorption of the room",
+            "0.161": "Empirical constant for metric units"
+        },
+        substitution=rf"RT_{{60}} = \frac{{0.161 \cdot {volume:.1f}}}{{{surface_area:.1f}}}",
+        calculation_steps=[
+            f"Use the room volume: {volume:.1f} m³",
+            f"Use the total absorption area: {surface_area:.1f} m²",
+            "Calculate the reverberation time from the simplified Sabine relation."
+        ]
+    )
 
+    # Add two native informational cards beneath the Glass Box section
+    col1, col2 = st.columns(2)
+    with col1:
+        with st.container(border=True):
+            st.markdown("**RT60 Insights**")
+            st.write("This view summarizes how different surface materials affect the perceived liveliness of the room.")
+
+    with col2:
+        with st.container(border=True):
+            st.markdown("**Absorption Guidance**")
+            st.write("Use the material selectors to compare how reflective and absorptive finishes change reverberation.")
 
 
 # ============================================================================
@@ -714,6 +810,34 @@ with tab_sbir:
     # Display the SBIR analysis chart
     st.plotly_chart(fig_sbir, use_container_width=True)
     
-    # Show the physics formula behind the quarter-wavelength calculation
-    st.info("💡 **Glass Box Physics:** Quarter-Wavelength Cancellation")
-    st.latex(r"f_{cancel} = \frac{c}{4d}")
+    render_glass_box(
+        title="SBIR Cancellation Frequency",
+        inputs={
+            "Distance to front wall (d)": f"{d_front:.2f} m",
+            "Speed of sound (c)": f"{SPEED_OF_SOUND:.0f} m/s"
+        },
+        formula_latex=r"f_c = \frac{c}{4d}",
+        formula_elements={
+            "f_c": "Cancellation center frequency",
+            "c": "Speed of sound",
+            "d": "Distance to the reflecting boundary",
+            "4": "Quarter-wavelength scaling"
+        },
+        substitution=rf"f_c = \frac{{{SPEED_OF_SOUND:.0f}}}{{4 \cdot {d_front:.2f}}}",
+        calculation_steps=[
+            f"Use the measured distance to the boundary: {d_front:.2f} m",
+            f"Apply the quarter-wavelength relationship to estimate the dip frequency: {f_front} Hz"
+        ]
+    )
+
+    # Add two native informational cards beneath the Glass Box section
+    col1, col2 = st.columns(2)
+    with col1:
+        with st.container(border=True):
+            st.markdown("**SBIR Insights**")
+            st.write("The analysis highlights how nearby boundaries create cancellation dips in the bass response.")
+
+    with col2:
+        with st.container(border=True):
+            st.markdown("**Boundary Notes**")
+            st.write("Move the speaker closer to or farther from surfaces to see how the problem frequencies shift.")
