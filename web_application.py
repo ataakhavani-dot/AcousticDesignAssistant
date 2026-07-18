@@ -6,6 +6,7 @@
 # SECTION 1: IMPORT EXTERNAL LIBRARIES
 # These are tools/packages that other people wrote that we're using in our app
 import streamlit as st           # Creates interactive web apps in Python (no HTML needed!)
+import streamlit.components.v1 as components
 import numpy as np               # For fast math calculations with lists of numbers
 import pandas as pd              # For organizing data into tables (like Excel)
 import plotly.graph_objects as go  # For creating interactive charts and graphs
@@ -53,16 +54,16 @@ st.markdown("""
     }
     /* The labels above the numbers (like "Volume", "Surface") */
     div[data-testid="stMetric"] label {
-        color: #d1d5db !important;  /* Light gray text */
+        color: #2c2e30 !important;  /* Light gray text */
     }
     
     /* ===== INPUT CONTROLS STYLING ===== */
     /* These are sliders (Length, Width, Height) and dropdown menus */
     .stSlider > label {
-        color: #d1d5db !important;  /* Label text for sliders */
+        color: #e2e8f0 !important;  /* Label text for sliders */
     }
     .stSelectbox > label {
-        color: #d1d5db !important;  /* Label text for dropdown menus */
+        color: #e2e8f0 !important;  /* Label text for dropdown menus */
     }
     
     /* ===== HEADERS STYLING ===== */
@@ -109,6 +110,30 @@ st.markdown("""
     div[data-testid="stMetricValue"],
     div[data-testid="stMetric"] [data-testid="stMetricLabel"] {
         font-size: 115% !important;
+    }
+
+    /* ===== GLASS BOX DARK THEME OVERRIDES ===== */
+    /* Keep the inputs and expandable explanation sections dark even if Streamlit uses a light theme */
+    div[data-testid="stCodeBlock"] {
+        background-color: #0f172a !important;
+        border: 1px solid #334155 !important;
+        color: #e2e8f0 !important;
+        border-radius: 8px !important;
+    }
+    div[data-testid="stCodeBlock"] pre,
+    div[data-testid="stCodeBlock"] code {
+        background-color: transparent !important;
+        color: #e2e8f0 !important;
+    }
+    div[data-testid="stExpander"] {
+        background-color: #0f172a !important;
+        border: 1px solid #334155 !important;
+        border-radius: 8px !important;
+    }
+    div[data-testid="stExpander"] summary,
+    div[data-testid="stExpander"] > div {
+        background-color: #0f172a !important;
+        color: #e2e8f0 !important;
     }
 </style>
 """, unsafe_allow_html=True)  # unsafe_allow_html=True lets us use custom HTML/CSS
@@ -183,6 +208,187 @@ def render_glass_box(title, inputs, formula_latex, formula_elements, substitutio
             st.markdown("**Calculation Steps**")
             steps_string = "\n".join(calculation_steps)
             st.code(steps_string, language="plaintext")
+
+
+def render_audio_carousel():
+    """
+    Render a Netflix-style audio carousel that plays concept clips when clicked.
+    """
+    html_code = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <style>
+    body {
+        background-color: #0e1117;
+        margin: 0;
+        font-family: sans-serif;
+    }
+    .carousel-wrapper {
+        margin: 1rem 0 0.5rem 0;
+    }
+    .carousel-title {
+        color: white;
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 0.75rem;
+    }
+    .carousel-container {
+        display: flex;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        gap: 16px;
+        padding: 0 4px 12px 4px;
+    }
+    .carousel-container::-webkit-scrollbar {
+        height: 8px;
+    }
+    .carousel-container::-webkit-scrollbar-track {
+        background: #1e1e1e;
+        border-radius: 4px;
+    }
+    .carousel-container::-webkit-scrollbar-thumb {
+        background: #555;
+        border-radius: 4px;
+    }
+    .carousel-card {
+        position: relative;
+        flex: 0 0 auto;
+        width: 150px;
+        height: 220px;
+        border-radius: 8px;
+        background-color: #333;
+        overflow: hidden;
+        transition: transform 0.3s ease;
+        cursor: pointer;
+    }
+    .carousel-card:hover {
+        transform: scale(1.03);
+    }
+    .carousel-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 8px;
+        opacity: 0.8;
+        box-shadow: 2px 4px 10px rgba(0,0,0,0.5);
+    }
+    .carousel-card:hover .carousel-image {
+        opacity: 1;
+    }
+    .carousel-number {
+        position: absolute;
+        bottom: -12px;
+        left: -14px;
+        font-size: 78px;
+        font-weight: 900;
+        line-height: 1;
+        font-family: 'Arial Black', Impact, sans-serif;
+        color: #0e1117;
+        -webkit-text-stroke: 2px white;
+        text-shadow: 2px 4px 6px rgba(0,0,0,0.6);
+        z-index: 10;
+        pointer-events: none;
+    }
+    .card-title-overlay {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        color: white;
+        font-weight: bold;
+        font-size: 13px;
+        text-shadow: 1px 1px 3px black;
+        pointer-events: none;
+    }
+    .play-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 34px;
+        color: white;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+    .carousel-card:hover .play-icon {
+        opacity: 1;
+    }
+    .audio-player-container {
+        margin-top: 12px;
+        padding: 12px;
+        background-color: #1e1e1e;
+        border-radius: 8px;
+        text-align: center;
+    }
+    .now-playing-text {
+        color: #4CAF50;
+        font-size: 13px;
+        margin-bottom: 8px;
+        font-weight: bold;
+        display: none;
+    }
+    audio {
+        width: 100%;
+        height: 40px;
+        outline: none;
+    }
+    </style>
+    </head>
+    <body>
+    <div class="carousel-wrapper">
+        <div class="carousel-title">Listen & Learn: Acoustic Concepts</div>
+        <div class="carousel-container">
+            <div class="carousel-card" onclick="playAudio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', 'Understanding Room Modes')">
+                <img class="carousel-image" src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=500&q=80" />
+                <div class="card-title-overlay">Room Modes</div>
+                <div class="play-icon">▶</div>
+                <div class="carousel-number">1</div>
+            </div>
+            <div class="carousel-card" onclick="playAudio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', 'Reverberation Time (RT60)')">
+                <img class="carousel-image" src="https://images.unsplash.com/photo-1601058268499-e52658b8bb88?w=500&q=80" />
+                <div class="card-title-overlay">RT60 Limits</div>
+                <div class="play-icon">▶</div>
+                <div class="carousel-number">2</div>
+            </div>
+            <div class="carousel-card" onclick="playAudio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', 'Speaker Boundary Interference Response (SBIR)')">
+                <img class="carousel-image" src="https://images.unsplash.com/photo-1516280440502-a2798e404b90?w=500&q=80" />
+                <div class="card-title-overlay">SBIR Effects</div>
+                <div class="play-icon">▶</div>
+                <div class="carousel-number">3</div>
+            </div>
+            <div class="carousel-card" onclick="playAudio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', 'The Bolt Area Explained')">
+                <img class="carousel-image" src="https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=500&q=80" />
+                <div class="card-title-overlay">Bolt Area</div>
+                <div class="play-icon">▶</div>
+                <div class="carousel-number">4</div>
+            </div>
+        </div>
+    </div>
+    <div class="audio-player-container">
+        <div id="now-playing" class="now-playing-text">Select a topic to start listening</div>
+        <audio id="main-audio-player" controls>
+            <source id="audio-source" src="" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+    <script>
+        function playAudio(audioUrl, topicTitle) {
+            var player = document.getElementById('main-audio-player');
+            var source = document.getElementById('audio-source');
+            var textDisplay = document.getElementById('now-playing');
+            source.src = audioUrl;
+            textDisplay.style.display = 'block';
+            textDisplay.innerHTML = 'Now Playing: ' + topicTitle;
+            player.load();
+            player.play();
+        }
+    </script>
+    </body>
+    </html>
+    """
+    components.html(html_code, height=450)
 
 
 # ============================================================================
@@ -557,6 +763,8 @@ with tab_modes:
             "Compare the result against the room's low-frequency behavior and potential resonance."
         ]
     )
+
+    render_audio_carousel()
 
     # Add two native informational cards beneath the Glass Box section
     col1, col2 = st.columns(2)
