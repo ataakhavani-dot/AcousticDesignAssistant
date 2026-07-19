@@ -568,32 +568,23 @@ with st.sidebar:
 
 
 # --- MAIN CONTENT AREA - HEADER & ROOM INPUTS ---
-# Replace the old info callout with a compact top banner
+# Create banner with title on left and buttons on right inside the same banner
 st.markdown("""
 <div style="margin: -0.5rem -0.5rem 1rem -0.5rem; padding: 1rem 1.25rem; background: linear-gradient(90deg, #06090f 0%, #111827 100%); border-bottom: 1px solid rgba(255,255,255,0.12); border-radius: 0 0 10px 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.25);">
-    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 2rem;">
         <div style="text-align: left;">
             <div style="font-size: 1.3rem; font-weight: 700; color: #f8fafc;">🎧 Acoustic Design Assistant</div>
             <div style="font-size: 0.95rem; color: #cbd5e1; margin-top: 0.2rem;">Room acoustics, modal behavior, and reverberation analysis.</div>
         </div>
+        <div style="display: flex; gap: 0.5rem;" id="nav-buttons-container">
+            <a href="?nav_to=calculator-section" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block;">Calculator</a>
+            <a href="?nav_to=glass-box-section" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block;">Glass Box</a>
+            <a href="?nav_to=audio-explanation-section" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block;">Audio Explanation</a>
+            <a href="?nav_to=acoustic-insights-section" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block;">Acoustic Insights</a>
+        </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
-
-# Create navigation buttons using st.button with query params
-col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
-with col_btn1:
-    if st.button("Calculator", key="nav_calc", use_container_width=True):
-        st.query_params["nav_to"] = "calculator-section"
-with col_btn2:
-    if st.button("Glass Box", key="nav_glass", use_container_width=True):
-        st.query_params["nav_to"] = "glass-box-section"
-with col_btn3:
-    if st.button("Audio Explanation", key="nav_audio", use_container_width=True):
-        st.query_params["nav_to"] = "audio-explanation-section"
-with col_btn4:
-    if st.button("Acoustic Insights", key="nav_insights", use_container_width=True):
-        st.query_params["nav_to"] = "acoustic-insights-section"
 
 # Navigate to section if query param is set
 if st.query_params.get("nav_to"):
