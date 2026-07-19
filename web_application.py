@@ -50,11 +50,11 @@ st.markdown("""
     /* ===== METRIC BOXES STYLING ===== */
     /* Metrics are the boxes showing numbers like "Volume: 60 m³" */
     div[data-testid="stMetricValue"] {
-        color: #3b82f6;  /* Make the numbers blue (stands out) */
+        color: #60a5fa;  /* Match the blue used for slider labels and accents */
     }
     /* The labels above the numbers (like "Volume", "Surface") */
     div[data-testid="stMetric"] label {
-        color: #2c2e30 !important;  /* Light gray text */
+        color: #e2e8f0 !important;  /* Keep labels bright and readable */
     }
     
     /* ===== INPUT CONTROLS STYLING ===== */
@@ -100,7 +100,7 @@ st.markdown("""
         margin-top: 0.5rem;
     }
     div[data-testid="stMetricValue"] {
-        font-size: 1.2rem !important;
+        font-size: 1.32rem !important;
         line-height: 1.2;
     }
 
