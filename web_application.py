@@ -580,48 +580,49 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Create navigation buttons using st.button with callback
+# Create navigation buttons using st.button with query params
 col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
 with col_btn1:
     if st.button("Calculator", key="nav_calc", use_container_width=True):
-        # Navigate using session state
-        st.session_state.scroll_target = "calculator-section"
+        st.query_params["nav_to"] = "calculator-section"
 with col_btn2:
     if st.button("Glass Box", key="nav_glass", use_container_width=True):
-        st.session_state.scroll_target = "glass-box-section"
+        st.query_params["nav_to"] = "glass-box-section"
 with col_btn3:
     if st.button("Audio Explanation", key="nav_audio", use_container_width=True):
-        st.session_state.scroll_target = "audio-explanation-section"
+        st.query_params["nav_to"] = "audio-explanation-section"
 with col_btn4:
     if st.button("Acoustic Insights", key="nav_insights", use_container_width=True):
-        st.session_state.scroll_target = "acoustic-insights-section"
+        st.query_params["nav_to"] = "acoustic-insights-section"
 
-# Handle scroll target from session state
-if st.session_state.get('scroll_target'):
-    target_id = st.session_state.scroll_target
+# Navigate to section if query param is set
+if st.query_params.get("nav_to"):
+    target_id = st.query_params.get("nav_to")
+    # Use JavaScript with multiple attempts to scroll to the target element
     st.markdown(f"""
     <script>
         function scrollToElement() {{
             const elem = document.getElementById('{target_id}');
             if (elem) {{
-                elem.scrollIntoView({{behavior: 'smooth', block: 'start'}});
-                // Clear the target so it doesn't trigger again on re-render
-                window.scrolled = true;
-            }} else {{
-                // Element not found yet, retry
-                setTimeout(scrollToElement, 200);
+                // Found it - scroll with multiple attempts to ensure it works
+                for (let i = 0; i < 3; i++) {{
+                    setTimeout(() => {{
+                        elem.scrollIntoView({{behavior: 'smooth', block: 'start'}});
+                    }}, i * 200);
+                }}
             }}
         }}
-        // Use requestIdleCallback for better timing, fallback to setTimeout
-        if ('requestIdleCallback' in window) {{
-            requestIdleCallback(scrollToElement, {{ timeout: 2000 }});
-        }} else {{
-            setTimeout(scrollToElement, 500);
+        // Try to scroll at different times to catch when page is ready
+        setTimeout(scrollToElement, 500);
+        setTimeout(scrollToElement, 1000);
+        setTimeout(scrollToElement, 1500);
+        
+        // Also try when page finishes loading
+        if (document.readyState === 'loading') {{
+            document.addEventListener('DOMContentLoaded', scrollToElement);
         }}
     </script>
     """, unsafe_allow_html=True)
-    # Clear the target after processing
-    st.session_state.scroll_target = None
 
 # Handle navigation scrolling based on query params
 # (Removed - using direct onclick handlers instead for better reliability)
