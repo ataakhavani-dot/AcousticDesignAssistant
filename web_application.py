@@ -126,15 +126,16 @@ st.markdown("""
         color: #e2e8f0 !important;
     }
     div[data-testid="stExpander"] {
-        background-color: #0f172a !important;
+        background-color: #111827 !important;
         border: 1px solid #334155 !important;
         border-radius: 8px !important;
     }
     div[data-testid="stExpander"] summary,
     div[data-testid="stExpander"] > div {
-        background-color: #0f172a !important;
+        background-color: #111827 !important;
         color: #e2e8f0 !important;
     }
+
 </style>
 """, unsafe_allow_html=True)  # unsafe_allow_html=True lets us use custom HTML/CSS
 
@@ -559,8 +560,31 @@ with st.sidebar:
 
 
 # --- MAIN CONTENT AREA - HEADER & ROOM INPUTS ---
-# Add a prominent banner at the very top of the main layout
-st.info("🎧 Acoustic Design Assistant", icon="🎧")
+# Replace the old info callout with a compact top banner
+st.markdown("""
+<div style="margin: -0.5rem -0.5rem 1rem -0.5rem; padding: 1rem 1.25rem; background: linear-gradient(90deg, #06090f 0%, #111827 100%); border-bottom: 1px solid rgba(255,255,255,0.12); border-radius: 0 0 10px 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.25);">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <div style="text-align: left;">
+            <div style="font-size: 1.3rem; font-weight: 700; color: #f8fafc;">🎧 Acoustic Design Assistant</div>
+            <div style="font-size: 0.95rem; color: #cbd5e1; margin-top: 0.2rem;">Room acoustics, modal behavior, and reverberation analysis.</div>
+        </div>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; align-items: center;">
+            <a href="#calculator-section" style="text-decoration: none;">
+                <span style="display: inline-block; padding: 0.45rem 0.8rem; border-radius: 999px; background: #1f2937; color: #f8fafc; border: 1px solid rgba(255,255,255,0.16); font-size: 0.85rem; font-weight: 600;">Calculator</span>
+            </a>
+            <a href="#glass-box-section" style="text-decoration: none;">
+                <span style="display: inline-block; padding: 0.45rem 0.8rem; border-radius: 999px; background: #1f2937; color: #f8fafc; border: 1px solid rgba(255,255,255,0.16); font-size: 0.85rem; font-weight: 600;">Glass Box</span>
+            </a>
+            <a href="#audio-explanation-section" style="text-decoration: none;">
+                <span style="display: inline-block; padding: 0.45rem 0.8rem; border-radius: 999px; background: #1f2937; color: #f8fafc; border: 1px solid rgba(255,255,255,0.16); font-size: 0.85rem; font-weight: 600;">Audio Explanation</span>
+            </a>
+            <a href="#acoustic-insights-section" style="text-decoration: none;">
+                <span style="display: inline-block; padding: 0.45rem 0.8rem; border-radius: 999px; background: #1f2937; color: #f8fafc; border: 1px solid rgba(255,255,255,0.16); font-size: 0.85rem; font-weight: 600;">Acoustic Insights</span>
+            </a>
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 # Keep a breathable layout without making the section feel disconnected
 # st.title() creates a big heading at the top of the page
@@ -738,10 +762,13 @@ with tab_modes:
             legend=dict(font=dict(color='#d1d5db'))  # Gray legend
         )
         
+        st.markdown("<div id='calculator-section'></div>", unsafe_allow_html=True)
+
         # Display the modal analysis chart
         st.plotly_chart(fig_modes, use_container_width=True)
     
     first_mode = round(SPEED_OF_SOUND / (2 * L), 1)
+    st.markdown("<div id='glass-box-section'></div>", unsafe_allow_html=True)
     render_glass_box(
         title="Rayleigh Equation (Axial Modes)",
         inputs={
@@ -764,9 +791,11 @@ with tab_modes:
         ]
     )
 
+    st.markdown("<div id='audio-explanation-section'></div>", unsafe_allow_html=True)
     render_audio_carousel()
 
     # Add two native informational cards beneath the Glass Box section
+    st.markdown("<div id='acoustic-insights-section'></div>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
         with st.container(border=True):
