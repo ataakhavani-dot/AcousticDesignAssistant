@@ -24,6 +24,12 @@ st.set_page_config(
     initial_sidebar_state="collapsed"  # Hide the sidebar by default to save space
 )
 
+# Initialize session state for navigation
+if 'nav_target' not in st.session_state:
+    st.session_state.nav_target = None
+
+# No query params needed - we'll use hash-based navigation
+
 
 # CUSTOM CSS STYLING
 # This is special code (HTML/CSS) that makes the page look nice with colors and formatting
@@ -232,7 +238,9 @@ def render_audio_carousel():
         color: white;
         font-size: 1.2rem;
         font-weight: bold;
-        margin-bottom: 0.75rem;
+        margin-bottom: 1.35rem;
+        padding-top: 0.25rem;
+        letter-spacing: 0.01em;
     }
     .carousel-container {
         display: flex;
@@ -339,7 +347,7 @@ def render_audio_carousel():
     </head>
     <body>
     <div class="carousel-wrapper">
-        <div class="carousel-title">Listen & Learn: Acoustic Concepts</div>
+        <div class="carousel-title">Audio Explanation</div>
         <div class="carousel-container">
             <div class="carousel-card" onclick="playAudio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', 'Understanding Room Modes')">
                 <img class="carousel-image" src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=500&q=80" />
@@ -568,23 +576,57 @@ st.markdown("""
             <div style="font-size: 1.3rem; font-weight: 700; color: #f8fafc;">🎧 Acoustic Design Assistant</div>
             <div style="font-size: 0.95rem; color: #cbd5e1; margin-top: 0.2rem;">Room acoustics, modal behavior, and reverberation analysis.</div>
         </div>
-        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; align-items: center;">
-            <a href="#calculator-section" style="text-decoration: none;">
-                <span style="display: inline-block; padding: 0.45rem 0.8rem; border-radius: 999px; background: #1f2937; color: #f8fafc; border: 1px solid rgba(255,255,255,0.16); font-size: 0.85rem; font-weight: 600;">Calculator</span>
-            </a>
-            <a href="#glass-box-section" style="text-decoration: none;">
-                <span style="display: inline-block; padding: 0.45rem 0.8rem; border-radius: 999px; background: #1f2937; color: #f8fafc; border: 1px solid rgba(255,255,255,0.16); font-size: 0.85rem; font-weight: 600;">Glass Box</span>
-            </a>
-            <a href="#audio-explanation-section" style="text-decoration: none;">
-                <span style="display: inline-block; padding: 0.45rem 0.8rem; border-radius: 999px; background: #1f2937; color: #f8fafc; border: 1px solid rgba(255,255,255,0.16); font-size: 0.85rem; font-weight: 600;">Audio Explanation</span>
-            </a>
-            <a href="#acoustic-insights-section" style="text-decoration: none;">
-                <span style="display: inline-block; padding: 0.45rem 0.8rem; border-radius: 999px; background: #1f2937; color: #f8fafc; border: 1px solid rgba(255,255,255,0.16); font-size: 0.85rem; font-weight: 600;">Acoustic Insights</span>
-            </a>
-        </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
+
+# Create navigation buttons using st.button with callback
+col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
+with col_btn1:
+    if st.button("Calculator", key="nav_calc", use_container_width=True):
+        # Navigate using session state
+        st.session_state.scroll_target = "calculator-section"
+with col_btn2:
+    if st.button("Glass Box", key="nav_glass", use_container_width=True):
+        st.session_state.scroll_target = "glass-box-section"
+with col_btn3:
+    if st.button("Audio Explanation", key="nav_audio", use_container_width=True):
+        st.session_state.scroll_target = "audio-explanation-section"
+with col_btn4:
+    if st.button("Acoustic Insights", key="nav_insights", use_container_width=True):
+        st.session_state.scroll_target = "acoustic-insights-section"
+
+# Handle scroll target from session state
+if st.session_state.get('scroll_target'):
+    target_id = st.session_state.scroll_target
+    st.markdown(f"""
+    <script>
+        function scrollToElement() {{
+            const elem = document.getElementById('{target_id}');
+            if (elem) {{
+                elem.scrollIntoView({{behavior: 'smooth', block: 'start'}});
+                // Clear the target so it doesn't trigger again on re-render
+                window.scrolled = true;
+            }} else {{
+                // Element not found yet, retry
+                setTimeout(scrollToElement, 200);
+            }}
+        }}
+        // Use requestIdleCallback for better timing, fallback to setTimeout
+        if ('requestIdleCallback' in window) {{
+            requestIdleCallback(scrollToElement, {{ timeout: 2000 }});
+        }} else {{
+            setTimeout(scrollToElement, 500);
+        }}
+    </script>
+    """, unsafe_allow_html=True)
+    # Clear the target after processing
+    st.session_state.scroll_target = None
+
+# Handle navigation scrolling based on query params
+# (Removed - using direct onclick handlers instead for better reliability)
+
+st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
 
 # Keep a breathable layout without making the section feel disconnected
 # st.title() creates a big heading at the top of the page
@@ -801,11 +843,13 @@ with tab_modes:
         with st.container(border=True):
             st.markdown("**Modal Analysis Insights**")
             st.write("This panel highlights how room proportions influence resonant modes and low-frequency behavior.")
+            st.caption("Read more...")
 
     with col2:
         with st.container(border=True):
             st.markdown("**Room Geometry Notes**")
             st.write("Adjust the dimensions to see how modal spacing shifts as the room becomes more or less proportionate.")
+            st.caption("Read more...")
 
 
 # ============================================================================
@@ -957,11 +1001,13 @@ with tab_rt60:
         with st.container(border=True):
             st.markdown("**RT60 Insights**")
             st.write("This view summarizes how different surface materials affect the perceived liveliness of the room.")
+            st.caption("Read more...")
 
     with col2:
         with st.container(border=True):
             st.markdown("**Absorption Guidance**")
             st.write("Use the material selectors to compare how reflective and absorptive finishes change reverberation.")
+            st.caption("Read more...")
 
 
 # ============================================================================
@@ -1073,8 +1119,10 @@ with tab_sbir:
         with st.container(border=True):
             st.markdown("**SBIR Insights**")
             st.write("The analysis highlights how nearby boundaries create cancellation dips in the bass response.")
+            st.caption("Read more...")
 
     with col2:
         with st.container(border=True):
             st.markdown("**Boundary Notes**")
             st.write("Move the speaker closer to or farther from surfaces to see how the problem frequencies shift.")
+            st.caption("Read more...")
