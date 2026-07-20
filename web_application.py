@@ -769,16 +769,16 @@ with st.sidebar:
 # --- MAIN CONTENT AREA - HEADER & ROOM INPUTS ---
 # Create banner with title on left and buttons on right inside the same banner
 st.markdown("""
-<div style="margin: -0.5rem -0.5rem 1rem -0.5rem; padding: 1rem 1.25rem; background: linear-gradient(90deg, #06090f 0%, #111827 100%); border-bottom: 1px solid rgba(255,255,255,0.12); border-radius: 0 0 10px 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.25);">
+<div style="margin: -0.5rem -0.5rem 1rem -0.5rem; padding: 1rem 1.25rem; background-color: #0f172a; border-bottom: 1px solid rgba(96, 165, 250, 0.2); border-radius: 0 0 10px 10px;">
     <div style="display: flex; justify-content: space-between; align-items: center; gap: 2rem;">
         <div style="text-align: left;">
             <div style="font-size: 1.3rem; font-weight: 700; color: #f8fafc;">🎧 Acoustic Design Assistant</div>
-            <div style="font-size: 0.95rem; color: #cbd5e1; margin-top: 0.2rem;">Room acoustics, modal behavior, and reverberation analysis.</div>
+            <div style="font-size: 0.95rem; color: #e2e8f0; margin-top: 0.2rem;">Room acoustics, modal behavior, and reverberation analysis.</div>
         </div>
         <div style="display: flex; gap: 0.5rem;" id="nav-buttons-container">
-            <a href="#" onclick="event.preventDefault(); navTo('calculator-section');" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block;">Calculator</a>
-            <a href="#" onclick="event.preventDefault(); navTo('audio-explanation-section');" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block;">Audio Explanation</a>
-            <a href="#" onclick="event.preventDefault(); navTo('acoustic-insights-section');" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block;">Acoustic Insights</a>
+            <a href="#" onclick="event.preventDefault(); navTo('calculator-section');" style="padding: 0.5rem 1rem; background: #60a5fa; color: white; border: 1px solid rgba(96, 165, 250, 0.5); border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block; transition: all 0.2s ease;">Calculator</a>
+            <a href="#" onclick="event.preventDefault(); navTo('audio-explanation-section');" style="padding: 0.5rem 1rem; background: #60a5fa; color: white; border: 1px solid rgba(96, 165, 250, 0.5); border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block; transition: all 0.2s ease;">Audio Explanation</a>
+            <a href="#" onclick="event.preventDefault(); navTo('acoustic-insights-section');" style="padding: 0.5rem 1rem; background: #60a5fa; color: white; border: 1px solid rgba(96, 165, 250, 0.5); border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block; transition: all 0.2s ease;">Acoustic Insights</a>
         </div>
     </div>
 </div>
