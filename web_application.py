@@ -119,18 +119,72 @@ st.markdown("""
     }
 
     /* ===== GLASS BOX DARK THEME OVERRIDES ===== */
-    /* Keep the inputs and expandable explanation sections dark even if Streamlit uses a light theme */
-    div[data-testid="stCodeBlock"] {
-        background-color: #0f172a !important;
-        border: 1px solid #334155 !important;
-        color: #e2e8f0 !important;
+    /* Target code blocks with multiple selector strategies to ensure coverage */
+    
+    /* Strategy 1: Direct element styling */
+    code {
+        background-color: #1e1e1e !important;
+        color: #e0e0e0 !important;
+        padding: 12px !important;
+        border-radius: 8px !important;
+        display: block !important;
+        border: 1px solid #333 !important;
+    }
+    
+    pre {
+        background-color: #1e1e1e !important;
+        color: #e0e0e0 !important;
+        padding: 16px !important;
+        border-radius: 8px !important;
+        border: 1px solid #333 !important;
+        overflow-x: auto !important;
+    }
+    
+    pre code {
+        background-color: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+    
+    /* Strategy 2: Target Streamlit's code block container */
+    div[data-testid="stCodeBlock"],
+    div[class*="code"],
+    div[class*="Code"] {
+        background-color: #1e1e1e !important;
+        border: 1px solid #333 !important;
         border-radius: 8px !important;
     }
-    div[data-testid="stCodeBlock"] pre,
-    div[data-testid="stCodeBlock"] code {
-        background-color: transparent !important;
-        color: #e2e8f0 !important;
+    
+    div[data-testid="stCodeBlock"] * {
+        background-color: #1e1e1e !important;
+        color: #e0e0e0 !important;
     }
+    
+    /* Copy button styling */
+    div[data-testid="stCodeBlock"] button,
+    button[aria-label*="Copy"],
+    button[title*="Copy"] {
+        color: #888 !important;
+        background-color: transparent !important;
+    }
+    
+    div[data-testid="stCodeBlock"] button:hover,
+    button[aria-label*="Copy"]:hover,
+    button[title*="Copy"]:hover {
+        color: #ffffff !important;
+    }
+
+    /* Apply dark grey background to all containers */
+    div[data-testid="stVerticalBlock"] > div[data-testid="stContainer"] {
+        background-color: #1a2332 !important;
+        border-radius: 8px !important;
+    }
+    
+    /* Alternatively, target containers more generally */
+    [data-testid="stContainer"] {
+        background-color: #1a2332 !important;
+    }
+
     div[data-testid="stExpander"] {
         background-color: #111827 !important;
         border: 1px solid #334155 !important;
@@ -219,7 +273,7 @@ def render_glass_box(title, inputs, formula_latex, formula_elements, substitutio
 
 def render_audio_carousel():
     """
-    Render a Netflix-style audio carousel that plays concept clips when clicked.
+    Render a podcast-style audio card component with waveform animations.
     """
     html_code = """
     <!DOCTYPE html>
@@ -227,177 +281,322 @@ def render_audio_carousel():
     <head>
     <style>
     body {
-        background-color: #0e1117;
+        background-color: transparent;
+        color: #e0e0e0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         margin: 0;
-        font-family: sans-serif;
+        padding: 0;
     }
-    .carousel-wrapper {
-        margin: 1rem 0 0.5rem 0;
-    }
-    .carousel-title {
-        color: white;
-        font-size: 1.2rem;
-        font-weight: bold;
-        margin-bottom: 1.35rem;
-        padding-top: 0.25rem;
-        letter-spacing: 0.01em;
-    }
-    .carousel-container {
-        display: flex;
-        overflow-x: auto;
-        scroll-behavior: smooth;
+
+    .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
         gap: 16px;
-        padding: 0 4px 12px 4px;
+        margin-bottom: 16px;
     }
-    .carousel-container::-webkit-scrollbar {
-        height: 8px;
-    }
-    .carousel-container::-webkit-scrollbar-track {
-        background: #1e1e1e;
-        border-radius: 4px;
-    }
-    .carousel-container::-webkit-scrollbar-thumb {
-        background: #555;
-        border-radius: 4px;
-    }
-    .carousel-card {
-        position: relative;
-        flex: 0 0 auto;
-        width: 150px;
-        height: 220px;
-        border-radius: 8px;
-        background-color: #333;
-        overflow: hidden;
-        transition: transform 0.3s ease;
+
+    .podcast-card {
+        background: #1a1f2e;
+        border: 1px solid #2a3544;
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
         cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
     }
-    .carousel-card:hover {
-        transform: scale(1.03);
+
+    .podcast-card:hover {
+        border-color: var(--accent-color);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 12px var(--glow-color);
+        transform: translateY(-2px);
     }
-    .carousel-image {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 8px;
-        opacity: 0.8;
-        box-shadow: 2px 4px 10px rgba(0,0,0,0.5);
+
+    .card-content {
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
     }
-    .carousel-card:hover .carousel-image {
-        opacity: 1;
+
+    .thumbnail {
+        width: 90px;
+        height: 90px;
+        min-width: 90px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
-    .carousel-number {
-        position: absolute;
-        bottom: -12px;
-        left: -14px;
-        font-size: 78px;
-        font-weight: 900;
-        line-height: 1;
-        font-family: 'Arial Black', Impact, sans-serif;
-        color: #0e1117;
-        -webkit-text-stroke: 2px white;
-        text-shadow: 2px 4px 6px rgba(0,0,0,0.6);
-        z-index: 10;
-        pointer-events: none;
+
+    .thumbnail svg {
+        width: 32px;
+        height: 32px;
+        transition: transform 0.2s ease;
     }
-    .card-title-overlay {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        right: 10px;
-        color: white;
-        font-weight: bold;
-        font-size: 13px;
-        text-shadow: 1px 1px 3px black;
-        pointer-events: none;
+
+    .podcast-card:hover .thumbnail svg {
+        transform: scale(1.1);
     }
-    .play-icon {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 34px;
-        color: white;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        pointer-events: none;
+
+    .details {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
     }
-    .carousel-card:hover .play-icon {
-        opacity: 1;
+
+    .meta {
+        font-size: 11px;
+        color: #8b8d9b;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 4px;
     }
-    .audio-player-container {
+
+    .title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 2px 0;
+        line-height: 1.2;
+    }
+
+    .author {
+        font-size: 12px;
+        color: #8b8d9b;
+        margin-bottom: 4px;
+    }
+
+    .description {
+        font-size: 11px;
+        color: #9ea0b0;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Waveform styling */
+    .waveform-container {
+        display: flex;
+        align-items: flex-end;
+        gap: 3px;
+        height: 24px;
         margin-top: 12px;
-        padding: 12px;
-        background-color: #1e1e1e;
-        border-radius: 8px;
-        text-align: center;
+        padding-top: 8px;
     }
-    .now-playing-text {
-        color: #4CAF50;
-        font-size: 13px;
-        margin-bottom: 8px;
-        font-weight: bold;
-        display: none;
+
+    .wave-bar {
+        flex: 1;
+        background-color: var(--wave-color);
+        border-radius: 1px;
+        height: 30%;
+        opacity: 0.6;
+        transition: height 0.2s ease, opacity 0.2s ease;
     }
+
+    /* Active playing state animation */
+    .podcast-card.playing .wave-bar {
+        opacity: 1;
+        animation: wave 1.2s ease-in-out infinite alternate;
+    }
+
+    @keyframes wave {
+        0% { height: 15%; }
+        100% { height: 100%; }
+    }
+
+    /* Player box */
+    .player-box {
+        background: #1a1f2e;
+        border: 1px solid #2a3544;
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .now-playing-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #60a5fa;
+    }
+
     audio {
         width: 100%;
-        height: 40px;
-        outline: none;
+        height: 32px;
     }
     </style>
     </head>
     <body>
-    <div class="carousel-wrapper">
-        <div class="carousel-title">Audio Explanation</div>
-        <div class="carousel-container">
-            <div class="carousel-card" onclick="playAudio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', 'Understanding Room Modes')">
-                <img class="carousel-image" src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=500&q=80" />
-                <div class="card-title-overlay">Room Modes</div>
-                <div class="play-icon">▶</div>
-                <div class="carousel-number">1</div>
+
+    <div class="card-grid">
+        
+        <!-- CARD 1 (Amber Theme) -->
+        <div class="podcast-card" 
+             style="--accent-color: #fbbf24; --glow-color: rgba(251, 191, 36, 0.2); --wave-color: #fbbf24;" 
+             onclick="playAudio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', 'Understanding Room Modes', this)">
+            <div class="card-content">
+                <div class="thumbnail" style="background: linear-gradient(135deg, #fbbf24, #f59e0b);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#1a1f2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                </div>
+                <div class="details">
+                    <div class="meta">Ep. 001 · ⏱ 12 min</div>
+                    <div class="title">Room Modes</div>
+                    <div class="author">Acoustic Fundamentals</div>
+                    <div class="description">Explore how sound waves bounce in a room and create standing wave patterns.</div>
+                </div>
             </div>
-            <div class="carousel-card" onclick="playAudio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', 'Reverberation Time (RT60)')">
-                <img class="carousel-image" src="https://images.unsplash.com/photo-1601058268499-e52658b8bb88?w=500&q=80" />
-                <div class="card-title-overlay">RT60 Limits</div>
-                <div class="play-icon">▶</div>
-                <div class="carousel-number">2</div>
-            </div>
-            <div class="carousel-card" onclick="playAudio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', 'Speaker Boundary Interference Response (SBIR)')">
-                <img class="carousel-image" src="https://images.unsplash.com/photo-1516280440502-a2798e404b90?w=500&q=80" />
-                <div class="card-title-overlay">SBIR Effects</div>
-                <div class="play-icon">▶</div>
-                <div class="carousel-number">3</div>
-            </div>
-            <div class="carousel-card" onclick="playAudio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', 'The Bolt Area Explained')">
-                <img class="carousel-image" src="https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=500&q=80" />
-                <div class="card-title-overlay">Bolt Area</div>
-                <div class="play-icon">▶</div>
-                <div class="carousel-number">4</div>
+            <div class="waveform-container">
+                <div class="wave-bar" style="height: 40%;"></div>
+                <div class="wave-bar" style="height: 70%; animation-delay: 0.1s;"></div>
+                <div class="wave-bar" style="height: 30%; animation-delay: 0.3s;"></div>
+                <div class="wave-bar" style="height: 90%; animation-delay: 0.2s;"></div>
+                <div class="wave-bar" style="height: 50%; animation-delay: 0.4s;"></div>
+                <div class="wave-bar" style="height: 80%; animation-delay: 0.1s;"></div>
+                <div class="wave-bar" style="height: 35%; animation-delay: 0.5s;"></div>
+                <div class="wave-bar" style="height: 60%; animation-delay: 0.2s;"></div>
             </div>
         </div>
+
+        <!-- CARD 2 (Purple Theme) -->
+        <div class="podcast-card" 
+             style="--accent-color: #a78bfa; --glow-color: rgba(167, 139, 250, 0.2); --wave-color: #a78bfa;" 
+             onclick="playAudio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', 'Reverberation Time (RT60)', this)">
+            <div class="card-content">
+                <div class="thumbnail" style="background: linear-gradient(135deg, #a78bfa, #8b5cf6);">
+                    <svg viewBox="0 0 24 24" fill="#1a1f2e">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"></path>
+                    </svg>
+                </div>
+                <div class="details">
+                    <div class="meta">Ep. 002 · ⏱ 15 min</div>
+                    <div class="title">RT60 Limits</div>
+                    <div class="author">Reverberation Basics</div>
+                    <div class="description">Learn how long sound takes to decay and why it matters for your room.</div>
+                </div>
+            </div>
+            <div class="waveform-container">
+                <div class="wave-bar" style="height: 30%;"></div>
+                <div class="wave-bar" style="height: 80%; animation-delay: 0.2s;"></div>
+                <div class="wave-bar" style="height: 50%; animation-delay: 0.4s;"></div>
+                <div class="wave-bar" style="height: 100%; animation-delay: 0.1s;"></div>
+                <div class="wave-bar" style="height: 40%; animation-delay: 0.3s;"></div>
+                <div class="wave-bar" style="height: 90%; animation-delay: 0.5s;"></div>
+                <div class="wave-bar" style="height: 60%; animation-delay: 0.2s;"></div>
+                <div class="wave-bar" style="height: 35%; animation-delay: 0.4s;"></div>
+            </div>
+        </div>
+
+        <!-- CARD 3 (Blue Theme) -->
+        <div class="podcast-card" 
+             style="--accent-color: #60a5fa; --glow-color: rgba(96, 165, 250, 0.2); --wave-color: #60a5fa;" 
+             onclick="playAudio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', 'Speaker Boundary Interference Response (SBIR)', this)">
+            <div class="card-content">
+                <div class="thumbnail" style="background: linear-gradient(135deg, #60a5fa, #3b82f6);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#1a1f2e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                    </svg>
+                </div>
+                <div class="details">
+                    <div class="meta">Ep. 003 · ⏱ 14 min</div>
+                    <div class="title">SBIR Effects</div>
+                    <div class="author">Speaker Placement</div>
+                    <div class="description">Understand how speaker position affects bass response near walls and corners.</div>
+                </div>
+            </div>
+            <div class="waveform-container">
+                <div class="wave-bar" style="height: 45%;"></div>
+                <div class="wave-bar" style="height: 75%; animation-delay: 0.15s;"></div>
+                <div class="wave-bar" style="height: 60%; animation-delay: 0.3s;"></div>
+                <div class="wave-bar" style="height: 85%; animation-delay: 0.2s;"></div>
+                <div class="wave-bar" style="height: 55%; animation-delay: 0.35s;"></div>
+                <div class="wave-bar" style="height: 78%; animation-delay: 0.1s;"></div>
+                <div class="wave-bar" style="height: 42%; animation-delay: 0.4s;"></div>
+                <div class="wave-bar" style="height: 72%; animation-delay: 0.25s;"></div>
+            </div>
+        </div>
+
+        <!-- CARD 4 (Cyan Theme) -->
+        <div class="podcast-card" 
+             style="--accent-color: #22d3ee; --glow-color: rgba(34, 211, 238, 0.2); --wave-color: #22d3ee;" 
+             onclick="playAudio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', 'The Bolt Area Explained', this)">
+            <div class="card-content">
+                <div class="thumbnail" style="background: linear-gradient(135deg, #22d3ee, #06b6d4);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#1a1f2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                        <polyline points="13 2 13 9 20 9"></polyline>
+                    </svg>
+                </div>
+                <div class="details">
+                    <div class="meta">Ep. 004 · ⏱ 16 min</div>
+                    <div class="title">Bolt Area</div>
+                    <div class="author">Room Stability</div>
+                    <div class="description">Discover the golden ratio for room dimensions that create stable acoustic conditions.</div>
+                </div>
+            </div>
+            <div class="waveform-container">
+                <div class="wave-bar" style="height: 35%;"></div>
+                <div class="wave-bar" style="height: 65%; animation-delay: 0.12s;"></div>
+                <div class="wave-bar" style="height: 55%; animation-delay: 0.25s;"></div>
+                <div class="wave-bar" style="height: 88%; animation-delay: 0.18s;"></div>
+                <div class="wave-bar" style="height: 48%; animation-delay: 0.38s;"></div>
+                <div class="wave-bar" style="height: 72%; animation-delay: 0.08s;"></div>
+                <div class="wave-bar" style="height: 52%; animation-delay: 0.45s;"></div>
+                <div class="wave-bar" style="height: 82%; animation-delay: 0.2s;"></div>
+            </div>
+        </div>
+
     </div>
-    <div class="audio-player-container">
-        <div id="now-playing" class="now-playing-text">Select a topic to start listening</div>
-        <audio id="main-audio-player" controls>
+
+    <!-- Embedded Player -->
+    <div class="player-box">
+        <div id="player-title" class="now-playing-title">Select a topic to start listening</div>
+        <audio id="audio-element" controls>
             <source id="audio-source" src="" type="audio/mpeg">
             Your browser does not support the audio element.
         </audio>
     </div>
+
     <script>
-        function playAudio(audioUrl, topicTitle) {
-            var player = document.getElementById('main-audio-player');
-            var source = document.getElementById('audio-source');
-            var textDisplay = document.getElementById('now-playing');
-            source.src = audioUrl;
-            textDisplay.style.display = 'block';
-            textDisplay.innerHTML = 'Now Playing: ' + topicTitle;
-            player.load();
-            player.play();
-        }
+    function playAudio(url, title, cardElement) {
+        var player = document.getElementById('audio-element');
+        var source = document.getElementById('audio-source');
+        var titleDisplay = document.getElementById('player-title');
+        
+        // Remove 'playing' class from all cards
+        var allCards = document.querySelectorAll('.podcast-card');
+        allCards.forEach(c => c.classList.remove('playing'));
+        
+        // Add 'playing' class to the clicked card to trigger wave animation
+        cardElement.classList.add('playing');
+        
+        // Update audio source and playback
+        source.src = url;
+        titleDisplay.innerHTML = "Now Playing: " + title;
+        player.load();
+        player.play();
+    }
     </script>
+
     </body>
     </html>
     """
-    components.html(html_code, height=450)
+    components.html(html_code, height=520)
 
 
 # ============================================================================
@@ -577,41 +776,112 @@ st.markdown("""
             <div style="font-size: 0.95rem; color: #cbd5e1; margin-top: 0.2rem;">Room acoustics, modal behavior, and reverberation analysis.</div>
         </div>
         <div style="display: flex; gap: 0.5rem;" id="nav-buttons-container">
-            <a href="?nav_to=calculator-section" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block;">Calculator</a>
-            <a href="?nav_to=glass-box-section" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block;">Glass Box</a>
-            <a href="?nav_to=audio-explanation-section" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block;">Audio Explanation</a>
-            <a href="?nav_to=acoustic-insights-section" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block;">Acoustic Insights</a>
+            <a href="#" onclick="event.preventDefault(); navTo('calculator-section');" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block;">Calculator</a>
+            <a href="#" onclick="event.preventDefault(); navTo('audio-explanation-section');" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block;">Audio Explanation</a>
+            <a href="#" onclick="event.preventDefault(); navTo('acoustic-insights-section');" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block;">Acoustic Insights</a>
         </div>
     </div>
 </div>
+
+<script>
+function navTo(sectionId) {
+    // Remove any existing nav_to param first
+    const url = new URL(window.location);
+    url.searchParams.delete('nav_to');
+    window.history.replaceState({}, '', url);
+    
+    // Now add the new nav_to param which will trigger a reload
+    setTimeout(() => {
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('nav_to', sectionId);
+        window.location.href = newUrl.toString();
+    }, 100);
+}
+</script>
 """, unsafe_allow_html=True)
 
 # Navigate to section if query param is set
 if st.query_params.get("nav_to"):
     target_id = st.query_params.get("nav_to")
-    # Use JavaScript with multiple attempts to scroll to the target element
+    # Use JavaScript with polling to wait for element and scroll to it correctly
     st.markdown(f"""
     <script>
+        function findScrollContainerAndScroll(elem) {{
+            if (!elem) return false;
+            
+            // Find scrollable container and calculate correct position
+            let scrollContainer = null;
+            let parent = elem;
+            let topOffset = 0;
+            
+            while (parent) {{
+                const styles = window.getComputedStyle(parent);
+                const isScrollable = parent.scrollHeight > parent.clientHeight;
+                
+                // Accumulate offsets from all parents
+                if (parent !== elem && parent !== window) {{
+                    topOffset += parent.offsetTop || 0;
+                }}
+                
+                // Find first scrollable container
+                if (isScrollable && !scrollContainer) {{
+                    scrollContainer = parent;
+                }}
+                
+                parent = parent.parentElement;
+            }}
+            
+            if (scrollContainer) {{
+                // Calculate scroll position with 100px padding from top
+                const targetScroll = Math.max(0, topOffset - 100);
+                console.log('Scrolling to:', targetScroll, 'Current scroll:', scrollContainer.scrollTop);
+                scrollContainer.scrollTop = targetScroll;
+                return true;
+            }}
+            
+            return false;
+        }}
+        
         function scrollToElement() {{
             const elem = document.getElementById('{target_id}');
-            if (elem) {{
-                // Found it - scroll with multiple attempts to ensure it works
-                for (let i = 0; i < 3; i++) {{
-                    setTimeout(() => {{
-                        elem.scrollIntoView({{behavior: 'smooth', block: 'start'}});
-                    }}, i * 200);
+            if (elem && findScrollContainerAndScroll(elem)) {{
+                console.log('Successfully scrolled to {target_id}');
+                return true;
+            }}
+            return false;
+        }}
+        
+        // Poll for the element with increasing intervals
+        let attempts = 0;
+        const maxAttempts = 50;
+        const pollIntervals = [100, 200, 300, 500, 500, 500, 1000, 1000];
+        
+        function pollForElement(attemptNum) {{
+            if (scrollToElement()) {{
+                console.log('Successfully scrolled after ' + attemptNum + ' attempts');
+                // Clear the query param after scrolling completes
+                setTimeout(() => {{
+                    const url = new URL(window.location);
+                    url.searchParams.delete('nav_to');
+                    window.history.replaceState({{}}, '', url);
+                    console.log('Cleared nav_to param');
+                }}, 500);
+                return;
+            }}
+            
+            if (attemptNum < maxAttempts) {{
+                const interval = pollIntervals[Math.min(attemptNum, pollIntervals.length - 1)];
+                setTimeout(() => pollForElement(attemptNum + 1), interval);
+                if (attemptNum % 10 === 0) {{
+                    console.log('Polling attempt ' + attemptNum + ' for {target_id}');
                 }}
+            }} else {{
+                console.log('Failed to find element {target_id} after ' + maxAttempts + ' attempts');
             }}
         }}
-        // Try to scroll at different times to catch when page is ready
-        setTimeout(scrollToElement, 500);
-        setTimeout(scrollToElement, 1000);
-        setTimeout(scrollToElement, 1500);
         
-        // Also try when page finishes loading
-        if (document.readyState === 'loading') {{
-            document.addEventListener('DOMContentLoaded', scrollToElement);
-        }}
+        // Start polling immediately
+        pollForElement(0);
     </script>
     """, unsafe_allow_html=True)
 
