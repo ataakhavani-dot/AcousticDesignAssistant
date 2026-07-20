@@ -776,27 +776,28 @@ st.markdown("""
             <div style="font-size: 0.95rem; color: #e2e8f0; margin-top: 0.2rem;">Room acoustics, modal behavior, and reverberation analysis.</div>
         </div>
         <div style="display: flex; gap: 0.5rem;" id="nav-buttons-container">
-            <a href="#" onclick="event.preventDefault(); navTo('calculator-section');" style="padding: 0.5rem 1rem; background: #60a5fa; color: white; border: 1px solid rgba(96, 165, 250, 0.5); border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block; transition: all 0.2s ease;">Calculator</a>
-            <a href="#" onclick="event.preventDefault(); navTo('audio-explanation-section');" style="padding: 0.5rem 1rem; background: #60a5fa; color: white; border: 1px solid rgba(96, 165, 250, 0.5); border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block; transition: all 0.2s ease;">Audio Explanation</a>
-            <a href="#" onclick="event.preventDefault(); navTo('acoustic-insights-section');" style="padding: 0.5rem 1rem; background: #60a5fa; color: white; border: 1px solid rgba(96, 165, 250, 0.5); border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block; transition: all 0.2s ease;">Acoustic Insights</a>
+            <div data-nav-target="calculator-section" style="padding: 0.5rem 1rem; background: #60a5fa; color: white; border: 1px solid rgba(96, 165, 250, 0.5); border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block; transition: all 0.2s ease; user-select: none;">Calculator</div>
+            <div data-nav-target="audio-explanation-section" style="padding: 0.5rem 1rem; background: #60a5fa; color: white; border: 1px solid rgba(96, 165, 250, 0.5); border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block; transition: all 0.2s ease; user-select: none;">Audio Explanation</div>
+            <div data-nav-target="acoustic-insights-section" style="padding: 0.5rem 1rem; background: #60a5fa; color: white; border: 1px solid rgba(96, 165, 250, 0.5); border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block; transition: all 0.2s ease; user-select: none;">Acoustic Insights</div>
         </div>
     </div>
 </div>
 
 <script>
-function navTo(sectionId) {
-    // Remove any existing nav_to param first
-    const url = new URL(window.location);
-    url.searchParams.delete('nav_to');
-    window.history.replaceState({}, '', url);
-    
-    // Now add the new nav_to param which will trigger a reload
-    setTimeout(() => {
-        const newUrl = new URL(window.location);
-        newUrl.searchParams.set('nav_to', sectionId);
-        window.location.href = newUrl.toString();
-    }, 100);
-}
+document.addEventListener('DOMContentLoaded', function() {
+    // Find all nav buttons and add click handlers
+    const navButtons = document.querySelectorAll('[data-nav-target]');
+    navButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('data-nav-target');
+            const targetElement = document.getElementById(targetId);
+            if (targetElement) {
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+});
 </script>
 """, unsafe_allow_html=True)
 
