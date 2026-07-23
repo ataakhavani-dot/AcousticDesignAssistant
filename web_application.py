@@ -1121,11 +1121,12 @@ st.markdown("---")
 # --- CREATE TABS ---
 # Tabs are like pages within a page - clicking each tab shows different content
 # st.tabs() creates the tab buttons at the top
-tab_modes, tab_rt60, tab_sbir, tab_ai = st.tabs([
+tab_modes, tab_rt60, tab_sbir, tab_ai, tab_resources = st.tabs([
     "📊 Modal Analysis",  # Tab 1: Analyze room modes
     "⏱️ RT60 Calculator",  # Tab 2: Calculate how long sound lasts in the room
     "📡 SBIR Analysis",  # Tab 3: Analyze speaker-wall interference
-    "🤖 Acoustics AI"  # Tab 4: AI chat assistant
+    "🤖 Acoustics AI",  # Tab 4: AI chat assistant
+    "📚 Resources"  # Tab 5: Acoustic learning resources
 ])
 
 # ============================================================================
@@ -1629,3 +1630,180 @@ with tab_ai:
                 response = generate_ai_response(user_input)
                 st.session_state.ai_messages.append({"role": "assistant", "content": response})
                 st.rerun()
+
+# ============================================================================
+# TAB 5: ACOUSTIC RESOURCES
+# Learning hub with tutorials, guides, and reference materials
+# ============================================================================
+with tab_resources:
+    st.markdown("""
+    <div style='text-align: center; margin-bottom: 2rem;'>
+        <h2 style='font-size: 2em; font-weight: 700; color: #e2e8f0; margin-bottom: 0.5rem;'>📚 Acoustic Resources</h2>
+        <p style='color: #cbd5e1; font-size: 1.05em; margin: 0;'>Learn acoustic principles, standards, and best practices</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Create 3 resource categories
+    res_col1, res_col2, res_col3 = st.columns(3, gap="medium")
+    
+    with res_col1:
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05)); 
+                    border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 12px; padding: 1.5rem; height: 100%;'>
+            <div style='font-size: 2.5em; margin-bottom: 1rem;'>📖</div>
+            <h3 style='font-size: 1.2em; font-weight: 600; margin-bottom: 0.75rem; color: #e2e8f0;'>Fundamentals</h3>
+            <p style='color: #cbd5e1; font-size: 0.95em; margin-bottom: 1rem; line-height: 1.5;'>
+                Master the core concepts of room acoustics, sound behavior, and acoustic measurements.
+            </p>
+            <ul style='color: #cbd5e1; font-size: 0.9em; margin: 0; padding-left: 1.2rem;'>
+                <li>Sound waves & propagation</li>
+                <li>Room modes & standing waves</li>
+                <li>Reverberation basics</li>
+                <li>Frequency response</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with res_col2:
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(168, 85, 247, 0.05)); 
+                    border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 12px; padding: 1.5rem; height: 100%;'>
+            <div style='font-size: 2.5em; margin-bottom: 1rem;'>🛠️</div>
+            <h3 style='font-size: 1.2em; font-weight: 600; margin-bottom: 0.75rem; color: #e2e8f0;'>Design & Treatment</h3>
+            <p style='color: #cbd5e1; font-size: 0.95em; margin-bottom: 1rem; line-height: 1.5;'>
+                Practical guides for designing acoustically optimized spaces and treating acoustic problems.
+            </p>
+            <ul style='color: #cbd5e1; font-size: 0.9em; margin: 0; padding-left: 1.2rem;'>
+                <li>Absorption materials</li>
+                <li>Bass traps & diffusion</li>
+                <li>Room layout strategies</li>
+                <li>Isolation techniques</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with res_col3:
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05)); 
+                    border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; padding: 1.5rem; height: 100%;'>
+            <div style='font-size: 2.5em; margin-bottom: 1rem;'>⚙️</div>
+            <h3 style='font-size: 1.2em; font-weight: 600; margin-bottom: 0.75rem; color: #e2e8f0;'>Standards & Reference</h3>
+            <p style='color: #cbd5e1; font-size: 0.95em; margin-bottom: 1rem; line-height: 1.5;'>
+                Industry standards, measurement protocols, and technical reference materials.
+            </p>
+            <ul style='color: #cbd5e1; font-size: 0.9em; margin: 0; padding-left: 1.2rem;'>
+                <li>STC & IIC ratings</li>
+                <li>Measurement standards</li>
+                <li>Building codes</li>
+                <li>ISO specifications</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
+    
+    # Key concepts section
+    st.markdown("### Key Acoustic Concepts")
+    
+    concepts_col1, concepts_col2 = st.columns(2)
+    
+    with concepts_col1:
+        with st.expander("🎵 **RT60 (Reverberation Time)**", expanded=False):
+            st.markdown("""
+            **RT60** is the time it takes for sound to decay by 60 decibels in a room.
+            
+            - **Formula**: RT60 = 0.161 × V / (α × S)
+            - **V**: Room volume (m³)
+            - **α**: Average absorption coefficient (0-1)
+            - **S**: Total surface area (m²)
+            
+            **Typical values:**
+            - Living room: 0.4-0.8 seconds
+            - Recording studio: 0.1-0.3 seconds
+            - Concert hall: 1.5-2.0 seconds
+            """)
+        
+        with st.expander("📈 **Room Modes**", expanded=False):
+            st.markdown("""
+            **Room modes** are standing wave patterns at frequencies determined by room dimensions.
+            
+            - **Axial modes**: Between 2 parallel walls (strongest)
+            - **Tangential modes**: Between 4 surfaces (moderate)
+            - **Oblique modes**: Between 6 surfaces (weakest)
+            
+            **Problem frequency**: f = c / (2 × distance)
+            - **c**: Speed of sound (343 m/s at 20°C)
+            - **distance**: Distance between parallel surfaces
+            """)
+    
+    with concepts_col2:
+        with st.expander("🛡️ **Sound Isolation (STC)**", expanded=False):
+            st.markdown("""
+            **Sound Transmission Class (STC)** measures how much sound a barrier blocks.
+            
+            - **STC 30-35**: Poor (normal voices audible)
+            - **STC 40-45**: Fair (loud voices faintly audible)
+            - **STC 50-60**: Good (loud music barely audible)
+            - **STC 70+**: Excellent (almost no sound transmission)
+            
+            **Techniques for improvement:**
+            - Increase mass (thicker walls)
+            - Decouple structures (floating floors)
+            - Seal air leaks (acoustic caulk)
+            - Use absorption (reduce flanking)
+            """)
+        
+        with st.expander("🎯 **SBIR (Speaker-Boundary Interference)**", expanded=False):
+            st.markdown("""
+            **SBIR** occurs when direct speaker sound combines with wall reflections.
+            
+            **Problem frequency**: f ≈ 343 Hz·m / (4 × distance)
+            
+            **Example**: Speaker 1m from wall
+            - f ≈ 343 / (4 × 1) = 86 Hz (cancellation dip)
+            
+            **Solutions:**
+            - Move speaker farther from walls
+            - Treat reflective surfaces (absorption/diffusion)
+            - Use acoustic room correction
+            - Strategic furniture placement
+            """)
+    
+    st.markdown("---")
+    
+    # Quick reference section
+    st.markdown("### Quick Reference: Speed of Sound")
+    st.markdown("""
+    | Medium | Temperature | Speed |
+    |--------|-------------|-------|
+    | Air | 0°C | 331 m/s |
+    | Air | 20°C | 343 m/s |
+    | Air | 25°C | 346 m/s |
+    | Water | 20°C | 1,480 m/s |
+    | Steel | 20°C | 5,000 m/s |
+    """)
+    
+    st.markdown("---")
+    
+    # Tips section
+    st.markdown("### Pro Tips for Acoustic Design")
+    
+    tips_col1, tips_col2 = st.columns(2)
+    
+    with tips_col1:
+        st.info("""
+        **🎵 For Recording Studios:**
+        - Target RT60: 0.1-0.3 seconds
+        - Use bass traps in corners (8-12 inches thick)
+        - Place absorption at first reflection points
+        - Avoid parallel walls (use splayed walls or diffusion)
+        """)
+    
+    with tips_col2:
+        st.success("""
+        **🎶 For Listening Rooms:**
+        - Target RT60: 0.3-0.6 seconds
+        - Balance absorption and diffusion
+        - Place monitor speakers ±30° from listening position
+        - Maintain 38% absorption to avoid over-damping
+        """)
