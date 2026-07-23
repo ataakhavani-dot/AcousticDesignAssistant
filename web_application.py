@@ -1566,19 +1566,19 @@ with tab_sbir:
 # AI-powered assistant for acoustics questions and guidance
 # ============================================================================
 with tab_ai:
-    st.markdown("### 🤖 Acoustics AI Assistant")
-    st.markdown(
-        "Ask questions about room acoustics, treatment, isolation, measurement, and live sound. "
-        "Get instant guidance backed by acoustic principles."
-    )
+    # Header section
+    st.markdown("""
+    <div style="margin-bottom: 2rem;">
+        <h2 style="color: #60a5fa; margin: 0 0 0.5rem 0; font-size: 2rem;">🤖 Acoustics AI</h2>
+        <p style="color: #94a3b8; margin: 0; font-size: 0.95rem;">Ask about rooms, treatment, isolation, measurement, live sound</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Initialize chat history in session state if it doesn't exist
     if "ai_messages" not in st.session_state:
         st.session_state.ai_messages = []
     
-    # Suggested questions
-    st.markdown("**Suggested Questions:**")
-    
+    # Suggested questions with custom styling
     suggestions = [
         "How do I calculate RT60 for a 60 m³ control room?",
         "Explain axial vs tangential room modes with an example.",
@@ -1586,42 +1586,78 @@ with tab_ai:
         "How thick should a porous absorber be to work at 100 Hz?"
     ]
     
-    # Create 2x2 grid for suggestions
-    cols = st.columns(2)
+    # Create full-width stacked suggestions with modern styling
+    st.markdown('<div style="margin-bottom: 2rem;">', unsafe_allow_html=True)
     for idx, suggestion in enumerate(suggestions):
-        with cols[idx % 2]:
-            if st.button(suggestion, key=f"suggestion_{idx}", use_container_width=True):
-                st.session_state.ai_messages.append({"role": "user", "content": suggestion})
-                st.rerun()
+        if st.button(
+            suggestion,
+            key=f"suggestion_{idx}",
+            use_container_width=True
+        ):
+            st.session_state.ai_messages.append({"role": "user", "content": suggestion})
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # Display chat history
-    st.markdown("---")
-    st.markdown("**Conversation**")
-    
-    chat_container = st.container(height=400, border=True)
-    
-    with chat_container:
+    if st.session_state.ai_messages:
+        st.markdown("""
+        <div style="margin-bottom: 1.5rem;">
+            <div style="
+                background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+                border: 1px solid #334155;
+                border-radius: 0.75rem;
+                padding: 1.5rem;
+                max-height: 400px;
+                overflow-y: auto;
+            ">
+        """, unsafe_allow_html=True)
+        
         for message in st.session_state.ai_messages:
             if message["role"] == "user":
-                st.markdown(f"**You:** {message['content']}")
+                st.markdown(f"""
+                <div style="margin-bottom: 1rem; text-align: right;">
+                    <div style="
+                        background: #60a5fa;
+                        color: #0f172a;
+                        padding: 0.75rem 1rem;
+                        border-radius: 0.5rem;
+                        display: inline-block;
+                        max-width: 80%;
+                    ">
+                        {message['content']}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
             else:
-                st.markdown(f"**AI Assistant:** {message['content']}")
+                st.markdown(f"""
+                <div style="margin-bottom: 1rem; text-align: left;">
+                    <div style="
+                        background: #1e293b;
+                        color: #e2e8f0;
+                        padding: 0.75rem 1rem;
+                        border-radius: 0.5rem;
+                        border-left: 3px solid #60a5fa;
+                        display: inline-block;
+                        max-width: 80%;
+                    ">
+                        {message['content']}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        st.markdown('</div></div>', unsafe_allow_html=True)
     
     # Chat input area
-    st.markdown("---")
+    st.markdown('<div style="margin-top: 2rem;">', unsafe_allow_html=True)
+    user_input = st.text_area(
+        "Ask about acoustics...",
+        placeholder="Ask about RT60, room modes, absorbers, measurement...",
+        height=90,
+        label_visibility="collapsed"
+    )
     
-    col_input, col_send = st.columns([5, 1])
-    
-    with col_input:
-        user_input = st.text_area(
-            "Ask about acoustics...",
-            placeholder="Ask about RT60, room modes, absorbers, measurement...",
-            height=80,
-            label_visibility="collapsed"
-        )
-    
+    col_send = st.columns([1])[0]
     with col_send:
-        st.write("")  # Spacing
         if st.button("Send", use_container_width=True, type="primary"):
             if user_input.strip():
                 st.session_state.ai_messages.append({"role": "user", "content": user_input})
@@ -1630,6 +1666,7 @@ with tab_ai:
                 response = generate_ai_response(user_input)
                 st.session_state.ai_messages.append({"role": "assistant", "content": response})
                 st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================================================
 # TAB 5: ACOUSTIC RESOURCES
