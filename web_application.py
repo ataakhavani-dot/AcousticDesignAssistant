@@ -894,52 +894,129 @@ if st.query_params.get("nav_to"):
 # ============================================================================
 
 # Add a little spacing below the nav bar
-st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
 
-# Wrap the intro in a neat container
-with st.container(border=True):
-    st.markdown("### Welcome to the Acoustic Design Assistant (ADA)")
-    st.markdown(
-        "ADA bridges the gap between complex acoustic physics and accessible design. "
-        "Whether you are planning a control room or studying sound behavior, this tool "
-        "allows you to analyze and visualize how sound interacts with physical spaces."
-    )
-    
-    st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
-    
-    # Create 4 columns for the 4 important topics
-    intro_col1, intro_col2, intro_col3, intro_col4 = st.columns(4)
-    
-    with intro_col1:
-        st.markdown("#### 🧮 Calculators")
-        st.markdown(
-            "<span style='color: #94a3b8; font-size: 0.9em;'>Adjust room dimensions in real-time to analyze low-frequency modes, predict RT60 decay times, and map speaker boundary interference (SBIR).</span>", 
-            unsafe_allow_html=True
-        )
-        
-    with intro_col2:
-        st.markdown("#### 🔍 Analysis Tools")
-        st.markdown(
-            "<span style='color: #94a3b8; font-size: 0.9em;'>Dive deep into acoustic behavior. Visualize modal frequencies, SBIR effects, and room stability with interactive charts and analysis.</span>", 
-            unsafe_allow_html=True
-        )
-        
-    with intro_col3:
-        st.markdown("#### 🎧 Audio Library")
-        st.markdown(
-            "<span style='color: #94a3b8; font-size: 0.9em;'>Listen and learn. Engage with our interactive carousel to hear podcast-style explanations of core acoustic concepts and physics.</span>", 
-            unsafe_allow_html=True
-        )
-        
-    with intro_col4:
-        st.markdown("#### 💡 Info Cards")
-        st.markdown(
-            "<span style='color: #94a3b8; font-size: 0.9em;'>Access acoustic insights. Read detailed reference cards covering industry standards, the Bolt Area stability zone, and material absorption guidelines.</span>", 
-            unsafe_allow_html=True
-        )
+# Hero/Welcome section with modern styling
+st.markdown("""
+<div style='text-align: center; margin-bottom: 3rem;'>
+    <h1 style='font-size: 3.5em; font-weight: 700; margin-bottom: 0.5rem; line-height: 1.2;'>
+        Design rooms that <span style='color: #60a5fa;'>sound right.</span>
+    </h1>
+    <p style='font-size: 1.1em; color: #cbd5e1; margin-bottom: 0; line-height: 1.6; max-width: 700px; margin-left: auto; margin-right: auto;'>
+        ADA bridges the gap between complex acoustic physics and accessible design. 
+        Whether you are planning a control room or studying sound behavior, ADA gives 
+        you the tools to make informed decisions.
+    </p>
+</div>
+
+<div style='text-align: center; margin-bottom: 2.5rem;'>
+    <h2 style='font-size: 1.8em; font-weight: 600; margin-bottom: 0.5rem;'>Four ways to explore acoustics</h2>
+    <p style='color: #94a3b8; font-size: 1em;'>Everything you need to understand, measure, and design sound in a space</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Create 4 columns for feature cards
+feature_col1, feature_col2, feature_col3, feature_col4 = st.columns(4, gap="medium")
+
+with feature_col1:
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(96, 165, 250, 0.05)); 
+                border: 1px solid rgba(96, 165, 250, 0.2); border-radius: 12px; padding: 1.5rem; height: 100%;'>
+        <div style='font-size: 2.5em; margin-bottom: 1rem;'>📊</div>
+        <h3 style='font-size: 1.2em; font-weight: 600; margin-bottom: 0.75rem; color: #e2e8f0;'>Calculators</h3>
+        <p style='color: #cbd5e1; font-size: 0.95em; margin-bottom: 1.5rem; line-height: 1.5;'>
+            Adjust room dimensions in real-time to analyze low-frequency modes, predict RT60 decay times, and map speaker boundary interference.
+        </p>
+        <a href='#room-geometry' style='color: #60a5fa; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 0.5rem;'>
+            Explore calculators <span style='font-size: 1.2em;'>→</span>
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
+
+with feature_col2:
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(96, 165, 250, 0.05)); 
+                border: 1px solid rgba(96, 165, 250, 0.2); border-radius: 12px; padding: 1.5rem; height: 100%;'>
+        <div style='font-size: 2.5em; margin-bottom: 1rem;'>🔍</div>
+        <h3 style='font-size: 1.2em; font-weight: 600; margin-bottom: 0.75rem; color: #e2e8f0;'>Analysis Tools</h3>
+        <p style='color: #cbd5e1; font-size: 0.95em; margin-bottom: 1.5rem; line-height: 1.5;'>
+            Dive deep into acoustic behavior. Visualize modal frequencies, SBIR effects, and room stability with interactive charts.
+        </p>
+        <a href='#room-geometry' style='color: #60a5fa; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 0.5rem;'>
+            Explore analysis <span style='font-size: 1.2em;'>→</span>
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
+
+with feature_col3:
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(96, 165, 250, 0.05)); 
+                border: 1px solid rgba(96, 165, 250, 0.2); border-radius: 12px; padding: 1.5rem; height: 100%;'>
+        <div style='font-size: 2.5em; margin-bottom: 1rem;'>🎧</div>
+        <h3 style='font-size: 1.2em; font-weight: 600; margin-bottom: 0.75rem; color: #e2e8f0;'>Audio Library</h3>
+        <p style='color: #cbd5e1; font-size: 0.95em; margin-bottom: 1.5rem; line-height: 1.5;'>
+            Listen and learn. Engage with our interactive carousel to hear podcast-style explanations of core acoustic concepts.
+        </p>
+        <a href='#audio-explanation-section' style='color: #60a5fa; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 0.5rem;'>
+            Explore audio <span style='font-size: 1.2em;'>→</span>
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
+
+with feature_col4:
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(96, 165, 250, 0.05)); 
+                border: 1px solid rgba(96, 165, 250, 0.2); border-radius: 12px; padding: 1.5rem; height: 100%;'>
+        <div style='font-size: 2.5em; margin-bottom: 1rem;'>💡</div>
+        <h3 style='font-size: 1.2em; font-weight: 600; margin-bottom: 0.75rem; color: #e2e8f0;'>Info Cards</h3>
+        <p style='color: #cbd5e1; font-size: 0.95em; margin-bottom: 1.5rem; line-height: 1.5;'>
+            Access acoustic insights covering industry standards, the Bolt Area stability zone, and material absorption guidelines.
+        </p>
+        <a href='#acoustic-insights-section' style='color: #60a5fa; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 0.5rem;'>
+            Explore insights <span style='font-size: 1.2em;'>→</span>
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
+
+# CTA buttons section
+st.markdown("""
+<div style='text-align: center; margin-top: 3rem; margin-bottom: 2rem;'>
+    <p style='color: #94a3b8; font-size: 0.95em;'>Ready to get started?</p>
+</div>
+""", unsafe_allow_html=True)
+
+cta_col1, cta_col2, cta_col3 = st.columns([1, 2, 1])
+with cta_col2:
+    st.markdown("""
+    <div style='display: flex; gap: 1rem; justify-content: center;'>
+        <a href='#room-geometry' style='
+            display: inline-block;
+            background: #60a5fa;
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95em;
+            transition: background 0.3s ease;
+        '>Start designing</a>
+        <a href='https://github.com' target='_blank' style='
+            display: inline-block;
+            background: transparent;
+            color: #e2e8f0;
+            padding: 0.75rem 1.5rem;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95em;
+            transition: border 0.3s ease;
+        '>View the documentation</a>
+    </div>
+    """, unsafe_allow_html=True)
 
 # Add spacing before the Room Geometry section starts
-st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
 
 # Keep a breathable layout without making the section feel disconnected
 # st.title() creates a big heading at the top of the page
