@@ -889,7 +889,57 @@ if st.query_params.get("nav_to"):
 # Handle navigation scrolling based on query params
 # (Removed - using direct onclick handlers instead for better reliability)
 
-st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+# ============================================================================
+# ONBOARDING & INTRODUCTION SECTION
+# ============================================================================
+
+# Add a little spacing below the nav bar
+st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+
+# Wrap the intro in a neat container
+with st.container(border=True):
+    st.markdown("### Welcome to the Acoustic Design Assistant (ADA)")
+    st.markdown(
+        "ADA bridges the gap between complex acoustic physics and accessible design. "
+        "Whether you are planning a control room or studying sound behavior, this tool "
+        "allows you to analyze and visualize how sound interacts with physical spaces."
+    )
+    
+    st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+    
+    # Create 4 columns for the 4 important topics
+    intro_col1, intro_col2, intro_col3, intro_col4 = st.columns(4)
+    
+    with intro_col1:
+        st.markdown("#### 🧮 Calculators")
+        st.markdown(
+            "<span style='color: #94a3b8; font-size: 0.9em;'>Adjust room dimensions in real-time to analyze low-frequency modes, predict RT60 decay times, and map speaker boundary interference (SBIR).</span>", 
+            unsafe_allow_html=True
+        )
+        
+    with intro_col2:
+        st.markdown("#### 🔍 Analysis Tools")
+        st.markdown(
+            "<span style='color: #94a3b8; font-size: 0.9em;'>Dive deep into acoustic behavior. Visualize modal frequencies, SBIR effects, and room stability with interactive charts and analysis.</span>", 
+            unsafe_allow_html=True
+        )
+        
+    with intro_col3:
+        st.markdown("#### 🎧 Audio Library")
+        st.markdown(
+            "<span style='color: #94a3b8; font-size: 0.9em;'>Listen and learn. Engage with our interactive carousel to hear podcast-style explanations of core acoustic concepts and physics.</span>", 
+            unsafe_allow_html=True
+        )
+        
+    with intro_col4:
+        st.markdown("#### 💡 Info Cards")
+        st.markdown(
+            "<span style='color: #94a3b8; font-size: 0.9em;'>Access acoustic insights. Read detailed reference cards covering industry standards, the Bolt Area stability zone, and material absorption guidelines.</span>", 
+            unsafe_allow_html=True
+        )
+
+# Add spacing before the Room Geometry section starts
+st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
 
 # Keep a breathable layout without making the section feel disconnected
 # st.title() creates a big heading at the top of the page
