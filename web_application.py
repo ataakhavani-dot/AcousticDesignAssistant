@@ -236,7 +236,49 @@ SPEED_OF_SOUND = 343.0  # meters per second at 20°C
 
 
 # ============================================================================
-# SECTION 4: REUSABLE GLASS BOX CALCULATION CARD
+# SECTION 4: AI RESPONSE GENERATOR
+# Generates helpful responses to acoustic questions
+# ============================================================================
+
+def generate_ai_response(question):
+    """
+    Generate a response to acoustic questions based on keywords.
+    This provides educational guidance on acoustic principles.
+    """
+    question_lower = question.lower()
+    
+    # Knowledge base with patterns and responses
+    responses = {
+        "rt60": "RT60 (reverberation time) is the time it takes for sound to decay by 60 dB in a room. Use Sabine's formula: RT60 = 0.161 * V / (α * S), where V is volume, α is average absorption coefficient, and S is total surface area. For a 60 m³ room with typical absorption, you'd expect RT60 of 0.5-2 seconds depending on treatment.",
+        
+        "mode": "Room modes are standing wave patterns that occur at specific frequencies determined by room dimensions. Axial modes involve sound bouncing between two parallel walls (simpler), while tangential modes bounce between four surfaces and oblique modes between all six. They cause reinforcement and cancellation at different frequencies, affecting bass response.",
+        
+        "absorber": "Porous absorbers (like foam and fiberglass) work by converting acoustic energy to heat as sound passes through the material. Thickness matters: at 100 Hz (3.4m wavelength), you'd need roughly 2-4 inches (5-10cm) of porous material for meaningful absorption. Lower frequencies require thicker materials.",
+        
+        "stc": "Sound Transmission Class (STC) measures how much sound a barrier blocks across 16 frequencies (125Hz-4kHz). IIC (Impact Isolation Class) measures impact noise like footsteps. Higher numbers = better isolation. A wall with STC 60 reduces sound by about 60dB, adequate for separating offices.",
+        
+        "measurement": "Use an SPL meter and pink noise to measure room response. Take measurements at multiple points (at least 3-5 locations). Plot frequency response to identify problem modes. Measure RT60 with tone bursts or music, recording how quickly sound decays after stopping playback.",
+        
+        "treatment": "Start by identifying problem frequencies using modal analysis. Place absorption at first-reflection points (where sound bounces from speakers to ears). Corner bass traps help with low-frequency modes. Diffusion randomizes reflections for better imaging without over-damping the room.",
+        
+        "isolation": "Decouple structures from the rest of the building using floating floors, resilient channels, or decoupled drywall layers. Seal all air gaps to prevent flanking paths. Increase mass with multiple drywall layers. Combine these techniques for 50+dB isolation.",
+        
+        "sbir": "Speaker-Boundary Interference Response (SBIR) occurs when direct speaker sound combines with reflections from nearby walls, causing cancellation at certain frequencies. Moving the speaker away from boundaries or treating reflective surfaces reduces SBIR. The problem frequency ≈ 343 Hz·m / (4 × distance in meters).",
+        
+        "default": "I can help with acoustic questions! Ask about RT60 calculation, room modes, absorbers, isolation, measurement techniques, SBIR, STC/IIC ratings, or treatment strategies. What would you like to know?"
+    }
+    
+    # Check for keyword matches
+    for keyword, response in responses.items():
+        if keyword in question_lower:
+            return response
+    
+    # If no keyword match, return default helpful response
+    return responses["default"]
+
+
+# ============================================================================
+# SECTION 6: REUSABLE GLASS BOX CALCULATION CARD
 # This renders the calculation as an explanatory info card with inputs and factors
 # ============================================================================
 
@@ -600,7 +642,7 @@ def render_audio_carousel():
 
 
 # ============================================================================
-# SECTION 5: PHYSICS ENGINE FUNCTIONS
+# SECTION 7: PHYSICS ENGINE FUNCTIONS
 # These functions calculate acoustic properties based on physics principles
 # ============================================================================
 
@@ -745,7 +787,7 @@ def calculate_sbir_curve(distances):
 
 
 # ============================================================================
-# SECTION 5: APP LAYOUT & USER INTERFACE
+# SECTION 8: APP LAYOUT & USER INTERFACE
 # This is where we build the actual web page that users interact with
 # ============================================================================
 
@@ -1079,10 +1121,11 @@ st.markdown("---")
 # --- CREATE TABS ---
 # Tabs are like pages within a page - clicking each tab shows different content
 # st.tabs() creates the tab buttons at the top
-tab_modes, tab_rt60, tab_sbir = st.tabs([
+tab_modes, tab_rt60, tab_sbir, tab_ai = st.tabs([
     "📊 Modal Analysis",  # Tab 1: Analyze room modes
     "⏱️ RT60 Calculator",  # Tab 2: Calculate how long sound lasts in the room
-    "📡 SBIR Analysis"  # Tab 3: Analyze speaker-wall interference
+    "📡 SBIR Analysis",  # Tab 3: Analyze speaker-wall interference
+    "🤖 Acoustics AI"  # Tab 4: AI chat assistant
 ])
 
 # ============================================================================
@@ -1516,3 +1559,73 @@ with tab_sbir:
             st.markdown("**Boundary Notes**")
             st.write("Move the speaker closer to or farther from surfaces to see how the problem frequencies shift.")
             st.caption("Read more...")
+
+# ============================================================================
+# TAB 4: ACOUSTICS AI CHAT
+# AI-powered assistant for acoustics questions and guidance
+# ============================================================================
+with tab_ai:
+    st.markdown("### 🤖 Acoustics AI Assistant")
+    st.markdown(
+        "Ask questions about room acoustics, treatment, isolation, measurement, and live sound. "
+        "Get instant guidance backed by acoustic principles."
+    )
+    
+    # Initialize chat history in session state if it doesn't exist
+    if "ai_messages" not in st.session_state:
+        st.session_state.ai_messages = []
+    
+    # Suggested questions
+    st.markdown("**Suggested Questions:**")
+    
+    suggestions = [
+        "How do I calculate RT60 for a 60 m³ control room?",
+        "Explain axial vs tangential room modes with an example.",
+        "What's the difference between STC and IIC ratings?",
+        "How thick should a porous absorber be to work at 100 Hz?"
+    ]
+    
+    # Create 2x2 grid for suggestions
+    cols = st.columns(2)
+    for idx, suggestion in enumerate(suggestions):
+        with cols[idx % 2]:
+            if st.button(suggestion, key=f"suggestion_{idx}", use_container_width=True):
+                st.session_state.ai_messages.append({"role": "user", "content": suggestion})
+                st.rerun()
+    
+    # Display chat history
+    st.markdown("---")
+    st.markdown("**Conversation**")
+    
+    chat_container = st.container(height=400, border=True)
+    
+    with chat_container:
+        for message in st.session_state.ai_messages:
+            if message["role"] == "user":
+                st.markdown(f"**You:** {message['content']}")
+            else:
+                st.markdown(f"**AI Assistant:** {message['content']}")
+    
+    # Chat input area
+    st.markdown("---")
+    
+    col_input, col_send = st.columns([5, 1])
+    
+    with col_input:
+        user_input = st.text_area(
+            "Ask about acoustics...",
+            placeholder="Ask about RT60, room modes, absorbers, measurement...",
+            height=80,
+            label_visibility="collapsed"
+        )
+    
+    with col_send:
+        st.write("")  # Spacing
+        if st.button("Send", use_container_width=True, type="primary"):
+            if user_input.strip():
+                st.session_state.ai_messages.append({"role": "user", "content": user_input})
+                
+                # Simple AI response system
+                response = generate_ai_response(user_input)
+                st.session_state.ai_messages.append({"role": "assistant", "content": response})
+                st.rerun()
