@@ -1566,19 +1566,166 @@ with tab_sbir:
 # AI-powered assistant for acoustics questions and guidance
 # ============================================================================
 with tab_ai:
-    # Header section
+    # Initialize session state
+    if "ai_messages" not in st.session_state:
+        st.session_state.ai_messages = []
+    if "ai_input" not in st.session_state:
+        st.session_state.ai_input = ""
+    
+    # Sticky header with better styling
     st.markdown("""
-    <div style="margin-bottom: 2rem;">
-        <h2 style="color: #60a5fa; margin: 0 0 0.5rem 0; font-size: 2rem;">🤖 Acoustics AI</h2>
-        <p style="color: #94a3b8; margin: 0; font-size: 0.95rem;">Ask about rooms, treatment, isolation, measurement, live sound</p>
+    <style>
+        .ai-header {
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+            padding: 1.25rem;
+            margin: -1.5rem -1.5rem 0 -1.5rem;
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+        .ai-header-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .ai-header-icon {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(96, 165, 250, 0.1) 100%);
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        .ai-header-text h1 {
+            color: #f1f5f9;
+            font-size: 1rem;
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .ai-header-text p {
+            color: #64748b;
+            font-size: 0.75rem;
+            margin: 0.25rem 0 0 0;
+        }
+        .ai-suggestions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: auto;
+            margin-top: 2rem;
+        }
+        .ai-suggestion-btn {
+            width: 100%;
+            text-align: left;
+            padding: 0.875rem 1.25rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(71, 85, 105, 0.4);
+            background: linear-gradient(135deg, rgba(17, 23, 38, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+            color: #cbd5e1;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        .ai-suggestion-btn:hover {
+            background: linear-gradient(135deg, rgba(22, 29, 45, 0.8) 0%, rgba(20, 26, 40, 0.9) 100%);
+            border-color: rgba(71, 85, 105, 0.6);
+            transform: translateY(-2px);
+        }
+        .ai-chat-container {
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(17, 23, 38, 0.5) 0%, rgba(15, 23, 42, 0.6) 100%);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 0.75rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .ai-message-user {
+            margin-bottom: 1rem;
+            text-align: right;
+        }
+        .ai-message-user-bubble {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #0a0f18;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            display: inline-block;
+            max-width: 85%;
+            font-size: 0.875rem;
+            font-weight: 500;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+        }
+        .ai-message-assistant {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+        .ai-message-assistant-bubble {
+            background: rgba(30, 41, 59, 0.8);
+            color: #e2e8f0;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            border-left: 3px solid #3b82f6;
+            display: inline-block;
+            max-width: 85%;
+            font-size: 0.875rem;
+        }
+        .ai-input-section {
+            margin-top: auto;
+            margin-bottom: 0;
+            padding: 1rem 0;
+            border-top: 1px solid rgba(51, 65, 85, 0.3);
+        }
+        .ai-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            align-items: center;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Header
+    st.markdown("""
+    <div class="ai-header">
+        <div class="ai-header-content">
+            <div class="ai-header-icon">⚡</div>
+            <div class="ai-header-text">
+                <h1>Acoustic Atlas</h1>
+                <p>AI assistant for acoustics</p>
+            </div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Initialize chat history in session state if it doesn't exist
-    if "ai_messages" not in st.session_state:
-        st.session_state.ai_messages = []
+    # Page title
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 4rem; margin-top: 2rem;">
+        <div style="
+            background: rgba(30, 41, 59, 0.5);
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(71, 85, 105, 0.3);
+        ">
+            <span style="color: #cbd5e1; font-size: 1.25rem;">⚡</span>
+        </div>
+        <div>
+            <h2 style="color: #f1f5f9; font-size: 1.1rem; margin: 0; font-weight: 600; letter-spacing: 0.5px;">
+                Acoustics AI
+            </h2>
+            <p style="color: #94a3b8; font-size: 0.85rem; margin: 0.25rem 0 0 0;">
+                Ask about rooms, treatment, isolation, measurement, live sound
+            </p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Suggested questions with custom styling
+    # Suggestions
     suggestions = [
         "How do I calculate RT60 for a 60 m³ control room?",
         "Explain axial vs tangential room modes with an example.",
@@ -1586,86 +1733,59 @@ with tab_ai:
         "How thick should a porous absorber be to work at 100 Hz?"
     ]
     
-    # Create full-width stacked suggestions with modern styling
-    st.markdown('<div style="margin-bottom: 2rem;">', unsafe_allow_html=True)
+    st.markdown('<div class="ai-suggestions">', unsafe_allow_html=True)
     for idx, suggestion in enumerate(suggestions):
-        if st.button(
-            suggestion,
-            key=f"suggestion_{idx}",
-            use_container_width=True
-        ):
+        if st.button(suggestion, key=f"ai_suggestion_{idx}", use_container_width=True):
             st.session_state.ai_messages.append({"role": "user", "content": suggestion})
+            response = generate_ai_response(suggestion)
+            st.session_state.ai_messages.append({"role": "assistant", "content": response})
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # Display chat history
+    # Chat history
     if st.session_state.ai_messages:
-        st.markdown("""
-        <div style="margin-bottom: 1.5rem;">
-            <div style="
-                background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-                border: 1px solid #334155;
-                border-radius: 0.75rem;
-                padding: 1.5rem;
-                max-height: 400px;
-                overflow-y: auto;
-            ">
-        """, unsafe_allow_html=True)
-        
+        st.markdown('<div class="ai-chat-container">', unsafe_allow_html=True)
         for message in st.session_state.ai_messages:
             if message["role"] == "user":
                 st.markdown(f"""
-                <div style="margin-bottom: 1rem; text-align: right;">
-                    <div style="
-                        background: #60a5fa;
-                        color: #0f172a;
-                        padding: 0.75rem 1rem;
-                        border-radius: 0.5rem;
-                        display: inline-block;
-                        max-width: 80%;
-                    ">
+                <div class="ai-message-user">
+                    <div class="ai-message-user-bubble">
                         {message['content']}
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
             else:
                 st.markdown(f"""
-                <div style="margin-bottom: 1rem; text-align: left;">
-                    <div style="
-                        background: #1e293b;
-                        color: #e2e8f0;
-                        padding: 0.75rem 1rem;
-                        border-radius: 0.5rem;
-                        border-left: 3px solid #60a5fa;
-                        display: inline-block;
-                        max-width: 80%;
-                    ">
+                <div class="ai-message-assistant">
+                    <div class="ai-message-assistant-bubble">
                         {message['content']}
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-        
-        st.markdown('</div></div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
     
-    # Chat input area
-    st.markdown('<div style="margin-top: 2rem;">', unsafe_allow_html=True)
+    # Input section
+    st.markdown('<div class="ai-input-section">', unsafe_allow_html=True)
+    
     user_input = st.text_area(
-        "Ask about acoustics...",
+        "Chat input",
+        value=st.session_state.ai_input,
         placeholder="Ask about RT60, room modes, absorbers, measurement...",
         height=90,
         label_visibility="collapsed"
     )
     
-    col_send = st.columns([1])[0]
-    with col_send:
-        if st.button("Send", use_container_width=True, type="primary"):
-            if user_input.strip():
-                st.session_state.ai_messages.append({"role": "user", "content": user_input})
-                
-                # Simple AI response system
-                response = generate_ai_response(user_input)
-                st.session_state.ai_messages.append({"role": "assistant", "content": response})
-                st.rerun()
+    st.session_state.ai_input = user_input
+    
+    # Submit button
+    if st.button("Send", use_container_width=True, type="primary", key="ai_send_btn"):
+        if user_input.strip():
+            st.session_state.ai_messages.append({"role": "user", "content": user_input})
+            response = generate_ai_response(user_input)
+            st.session_state.ai_messages.append({"role": "assistant", "content": response})
+            st.session_state.ai_input = ""
+            st.rerun()
+    
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================================================
