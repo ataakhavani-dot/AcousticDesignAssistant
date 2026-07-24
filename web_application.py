@@ -1563,7 +1563,7 @@ with tab_sbir:
 
 # ============================================================================
 # TAB 4: ACOUSTICS AI CHAT
-# AI-powered assistant for acoustics questions and guidance
+# Conversation component with message history, empty state, and download
 # ============================================================================
 with tab_ai:
     # Initialize session state
@@ -1572,158 +1572,187 @@ with tab_ai:
     if "ai_input" not in st.session_state:
         st.session_state.ai_input = ""
     
-    # Sticky header with better styling
+    # Styles
     st.markdown("""
     <style>
-        .ai-header {
-            position: sticky;
-            top: 0;
-            z-index: 999;
-            background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.9) 100%);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
-            padding: 1.25rem;
-            margin: -1.5rem -1.5rem 0 -1.5rem;
-            padding-left: 1.5rem;
-            padding-right: 1.5rem;
-        }
-        .ai-header-content {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        .ai-header-icon {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(96, 165, 250, 0.1) 100%);
-            padding: 0.75rem;
-            border-radius: 0.75rem;
-            border: 1px solid rgba(59, 130, 246, 0.2);
-        }
-        .ai-header-text h1 {
-            color: #f1f5f9;
-            font-size: 1rem;
-            margin: 0;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-        .ai-header-text p {
-            color: #64748b;
-            font-size: 0.75rem;
-            margin: 0.25rem 0 0 0;
-        }
-        .ai-suggestions {
+        .conversation-wrapper {
+            position: relative;
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
-            margin-bottom: auto;
-            margin-top: 2rem;
+            flex: 1;
+            height: 500px;
+            overflow: hidden;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            background: rgba(15, 23, 42, 0.3);
         }
-        .ai-suggestion-btn {
-            width: 100%;
-            text-align: left;
-            padding: 0.875rem 1.25rem;
-            border-radius: 0.75rem;
-            border: 1px solid rgba(71, 85, 105, 0.4);
-            background: linear-gradient(135deg, rgba(17, 23, 38, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
-            color: #cbd5e1;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: inherit;
-            box-sizing: border-box;
-        }
-        .ai-suggestion-btn:hover {
-            background: linear-gradient(135deg, rgba(22, 29, 45, 0.8) 0%, rgba(20, 26, 40, 0.9) 100%);
-            border-color: rgba(71, 85, 105, 0.6);
-            transform: translateY(-2px);
-        }
-        .ai-chat-container {
-            margin-top: 2rem;
-            margin-bottom: 2rem;
-            padding: 1.5rem;
-            background: linear-gradient(135deg, rgba(17, 23, 38, 0.5) 0%, rgba(15, 23, 42, 0.6) 100%);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 0.75rem;
-            max-height: 400px;
+        .conversation-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            padding: 1rem;
             overflow-y: auto;
+            flex: 1;
         }
-        .ai-message-user {
+        .conversation-empty-state {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 2rem;
+            text-align: center;
+        }
+        .conversation-empty-icon {
+            color: #64748b;
+            font-size: 2rem;
+        }
+        .conversation-empty-title {
+            color: #e2e8f0;
+            font-weight: 500;
+            font-size: 0.875rem;
+            margin: 0;
+        }
+        .conversation-empty-description {
+            color: #94a3b8;
+            font-size: 0.875rem;
+            margin: 0;
+        }
+        .message {
+            display: flex;
             margin-bottom: 1rem;
-            text-align: right;
+            gap: 0.75rem;
         }
-        .ai-message-user-bubble {
+        .message-user {
+            justify-content: flex-end;
+        }
+        .message-bubble {
+            max-width: 70%;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        .message-user-bubble {
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: #0a0f18;
-            padding: 0.75rem 1rem;
-            border-radius: 0.75rem;
-            display: inline-block;
-            max-width: 85%;
-            font-size: 0.875rem;
             font-weight: 500;
-            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
         }
-        .ai-message-assistant {
-            margin-bottom: 1rem;
-            text-align: left;
-        }
-        .ai-message-assistant-bubble {
+        .message-assistant-bubble {
             background: rgba(30, 41, 59, 0.8);
             color: #e2e8f0;
-            padding: 0.75rem 1rem;
-            border-radius: 0.75rem;
             border-left: 3px solid #3b82f6;
-            display: inline-block;
-            max-width: 85%;
+        }
+        .download-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem;
+            background: rgba(51, 65, 85, 0.5);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 0.375rem;
+            color: #e2e8f0;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+        .download-button:hover {
+            background: rgba(71, 85, 105, 0.5);
+            border-color: rgba(71, 85, 105, 0.6);
+        }
+        .scroll-button {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem;
+            background: rgba(51, 65, 85, 0.5);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 50%;
+            color: #e2e8f0;
+            cursor: pointer;
             font-size: 0.875rem;
+            transition: all 0.2s ease;
+            z-index: 10;
         }
-        .ai-input-section {
-            margin-top: auto;
-            margin-bottom: 0;
-            padding: 1rem 0;
-            border-top: 1px solid rgba(51, 65, 85, 0.3);
-        }
-        .ai-controls {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 0.75rem;
-            align-items: center;
+        .scroll-button:hover {
+            background: rgba(71, 85, 105, 0.5);
+            border-color: rgba(71, 85, 105, 0.6);
         }
     </style>
     """, unsafe_allow_html=True)
     
-    # Header
-    st.markdown("""
-    <div class="ai-header">
-        <div class="ai-header-content">
-            <div class="ai-header-icon">⚡</div>
-            <div class="ai-header-text">
-                <h1>Acoustic Atlas</h1>
-                <p>AI assistant for acoustics</p>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # Layout with columns for positioning
+    col_main, col_download = st.columns([20, 1])
     
-    # Page title
-    st.markdown("""
-    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 4rem; margin-top: 2rem;">
-        <div style="
-            background: rgba(30, 41, 59, 0.5);
-            padding: 0.75rem;
-            border-radius: 0.75rem;
-            border: 1px solid rgba(71, 85, 105, 0.3);
-        ">
-            <span style="color: #cbd5e1; font-size: 1.25rem;">⚡</span>
+    with col_main:
+        st.markdown("### Conversation")
+    
+    # Conversation component
+    st.markdown('<div class="conversation-wrapper">', unsafe_allow_html=True)
+    
+    # Empty state or message list
+    if not st.session_state.ai_messages:
+        st.markdown("""
+        <div class="conversation-empty-state">
+            <div class="conversation-empty-icon">💬</div>
+            <h3 class="conversation-empty-title">No messages yet</h3>
+            <p class="conversation-empty-description">Start a conversation to see messages here</p>
         </div>
-        <div>
-            <h2 style="color: #f1f5f9; font-size: 1.1rem; margin: 0; font-weight: 600; letter-spacing: 0.5px;">
-                Acoustics AI
-            </h2>
-            <p style="color: #94a3b8; font-size: 0.85rem; margin: 0.25rem 0 0 0;">
-                Ask about rooms, treatment, isolation, measurement, live sound
-            </p>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="conversation-content">', unsafe_allow_html=True)
+        
+        for message in st.session_state.ai_messages:
+            if message["role"] == "user":
+                st.markdown(f"""
+                <div class="message message-user">
+                    <div class="message-bubble message-user-bubble">
+                        {message['content']}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div class="message">
+                    <div class="message-bubble message-assistant-bubble">
+                        {message['content']}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Download button
+    if st.session_state.ai_messages:
+        st.markdown("""
+        <button class="download-button" onclick="
+            const messages = %s;
+            let markdown = '';
+            messages.forEach((msg, i) => {
+                const role = msg.role.charAt(0).toUpperCase() + msg.role.slice(1);
+                markdown += '**' + role + ':** ' + msg.content + '\\n\\n';
+            });
+            const blob = new Blob([markdown], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'conversation.md';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+        " title="Download conversation">📥</button>
+        """ % st.session_state.ai_messages, unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Input section
+    st.markdown("---")
     
     # Suggestions
     suggestions = [
@@ -1733,60 +1762,37 @@ with tab_ai:
         "How thick should a porous absorber be to work at 100 Hz?"
     ]
     
-    st.markdown('<div class="ai-suggestions">', unsafe_allow_html=True)
+    st.markdown("**Suggestions:**")
+    cols = st.columns(2)
     for idx, suggestion in enumerate(suggestions):
-        if st.button(suggestion, key=f"ai_suggestion_{idx}", use_container_width=True):
-            st.session_state.ai_messages.append({"role": "user", "content": suggestion})
-            response = generate_ai_response(suggestion)
-            st.session_state.ai_messages.append({"role": "assistant", "content": response})
-            st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+        with cols[idx % 2]:
+            if st.button(suggestion, key=f"ai_suggestion_{idx}", use_container_width=True):
+                st.session_state.ai_messages.append({"role": "user", "content": suggestion})
+                response = generate_ai_response(suggestion)
+                st.session_state.ai_messages.append({"role": "assistant", "content": response})
+                st.rerun()
     
-    # Chat history
-    if st.session_state.ai_messages:
-        st.markdown('<div class="ai-chat-container">', unsafe_allow_html=True)
-        for message in st.session_state.ai_messages:
-            if message["role"] == "user":
-                st.markdown(f"""
-                <div class="ai-message-user">
-                    <div class="ai-message-user-bubble">
-                        {message['content']}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                <div class="ai-message-assistant">
-                    <div class="ai-message-assistant-bubble">
-                        {message['content']}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("---")
     
-    # Input section
-    st.markdown('<div class="ai-input-section">', unsafe_allow_html=True)
-    
+    # Input textarea
     user_input = st.text_area(
-        "Chat input",
+        "Message",
         value=st.session_state.ai_input,
         placeholder="Ask about RT60, room modes, absorbers, measurement...",
-        height=90,
+        height=100,
         label_visibility="collapsed"
     )
     
     st.session_state.ai_input = user_input
     
     # Submit button
-    if st.button("Send", use_container_width=True, type="primary", key="ai_send_btn"):
+    if st.button("Send Message", use_container_width=True, type="primary", key="ai_send"):
         if user_input.strip():
             st.session_state.ai_messages.append({"role": "user", "content": user_input})
             response = generate_ai_response(user_input)
             st.session_state.ai_messages.append({"role": "assistant", "content": response})
             st.session_state.ai_input = ""
             st.rerun()
-    
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================================================
 # TAB 5: ACOUSTIC RESOURCES
