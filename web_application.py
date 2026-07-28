@@ -11,6 +11,7 @@ import numpy as np               # For fast math calculations with lists of numb
 import pandas as pd              # For organizing data into tables (like Excel)
 import plotly.graph_objects as go  # For creating interactive charts and graphs
 import plotly.express as px      # A simpler way to make charts with plotly
+from acoustic_ai_chat import render_acoustic_ai_chat
 # ============================================================================
 # SECTION 2: PAGE CONFIGURATION & STYLING
 # This sets up how the web page will look and behave
@@ -233,48 +234,6 @@ OCTAVE_BANDS = ['125', '250', '500', '1k', '2k', '4k']  # From low to high frequ
 # How fast sound travels through air at room temperature
 # This is a physics constant - you use it in many acoustic calculations
 SPEED_OF_SOUND = 343.0  # meters per second at 20°C
-
-
-# ============================================================================
-# SECTION 4: AI RESPONSE GENERATOR
-# Generates helpful responses to acoustic questions
-# ============================================================================
-
-def generate_ai_response(question):
-    """
-    Generate a response to acoustic questions based on keywords.
-    This provides educational guidance on acoustic principles.
-    """
-    question_lower = question.lower()
-    
-    # Knowledge base with patterns and responses
-    responses = {
-        "rt60": "RT60 (reverberation time) is the time it takes for sound to decay by 60 dB in a room. Use Sabine's formula: RT60 = 0.161 * V / (α * S), where V is volume, α is average absorption coefficient, and S is total surface area. For a 60 m³ room with typical absorption, you'd expect RT60 of 0.5-2 seconds depending on treatment.",
-        
-        "mode": "Room modes are standing wave patterns that occur at specific frequencies determined by room dimensions. Axial modes involve sound bouncing between two parallel walls (simpler), while tangential modes bounce between four surfaces and oblique modes between all six. They cause reinforcement and cancellation at different frequencies, affecting bass response.",
-        
-        "absorber": "Porous absorbers (like foam and fiberglass) work by converting acoustic energy to heat as sound passes through the material. Thickness matters: at 100 Hz (3.4m wavelength), you'd need roughly 2-4 inches (5-10cm) of porous material for meaningful absorption. Lower frequencies require thicker materials.",
-        
-        "stc": "Sound Transmission Class (STC) measures how much sound a barrier blocks across 16 frequencies (125Hz-4kHz). IIC (Impact Isolation Class) measures impact noise like footsteps. Higher numbers = better isolation. A wall with STC 60 reduces sound by about 60dB, adequate for separating offices.",
-        
-        "measurement": "Use an SPL meter and pink noise to measure room response. Take measurements at multiple points (at least 3-5 locations). Plot frequency response to identify problem modes. Measure RT60 with tone bursts or music, recording how quickly sound decays after stopping playback.",
-        
-        "treatment": "Start by identifying problem frequencies using modal analysis. Place absorption at first-reflection points (where sound bounces from speakers to ears). Corner bass traps help with low-frequency modes. Diffusion randomizes reflections for better imaging without over-damping the room.",
-        
-        "isolation": "Decouple structures from the rest of the building using floating floors, resilient channels, or decoupled drywall layers. Seal all air gaps to prevent flanking paths. Increase mass with multiple drywall layers. Combine these techniques for 50+dB isolation.",
-        
-        "sbir": "Speaker-Boundary Interference Response (SBIR) occurs when direct speaker sound combines with reflections from nearby walls, causing cancellation at certain frequencies. Moving the speaker away from boundaries or treating reflective surfaces reduces SBIR. The problem frequency ≈ 343 Hz·m / (4 × distance in meters).",
-        
-        "default": "I can help with acoustic questions! Ask about RT60 calculation, room modes, absorbers, isolation, measurement techniques, SBIR, STC/IIC ratings, or treatment strategies. What would you like to know?"
-    }
-    
-    # Check for keyword matches
-    for keyword, response in responses.items():
-        if keyword in question_lower:
-            return response
-    
-    # If no keyword match, return default helpful response
-    return responses["default"]
 
 
 # ============================================================================
@@ -1121,12 +1080,13 @@ st.markdown("---")
 # --- CREATE TABS ---
 # Tabs are like pages within a page - clicking each tab shows different content
 # st.tabs() creates the tab buttons at the top
-tab_modes, tab_rt60, tab_sbir, tab_ai, tab_resources = st.tabs([
+tab_modes, tab_rt60, tab_sbir, tab_ai, tab_resources, tab_atlas = st.tabs([
     "📊 Modal Analysis",  # Tab 1: Analyze room modes
     "⏱️ RT60 Calculator",  # Tab 2: Calculate how long sound lasts in the room
     "📡 SBIR Analysis",  # Tab 3: Analyze speaker-wall interference
     "🤖 Acoustics AI",  # Tab 4: AI chat assistant
-    "📚 Resources"  # Tab 5: Acoustic learning resources
+    "📚 Resources",  # Tab 5: Acoustic learning resources
+    "🎵 Acoustic Atlas"  # Tab 6: AI chat interface (Next.js)
 ])
 
 # ============================================================================
@@ -1563,236 +1523,10 @@ with tab_sbir:
 
 # ============================================================================
 # TAB 4: ACOUSTICS AI CHAT
-# Conversation component with message history, empty state, and download
+# Public Acoustic Atlas chat with local validation and multi-turn context
 # ============================================================================
 with tab_ai:
-    # Initialize session state
-    if "ai_messages" not in st.session_state:
-        st.session_state.ai_messages = []
-    if "ai_input" not in st.session_state:
-        st.session_state.ai_input = ""
-    
-    # Styles
-    st.markdown("""
-    <style>
-        .conversation-wrapper {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            height: 500px;
-            overflow: hidden;
-            border-radius: 0.5rem;
-            border: 1px solid rgba(51, 65, 85, 0.5);
-            background: rgba(15, 23, 42, 0.3);
-        }
-        .conversation-content {
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-            padding: 1rem;
-            overflow-y: auto;
-            flex: 1;
-        }
-        .conversation-empty-state {
-            display: flex;
-            width: 100%;
-            height: 100%;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            padding: 2rem;
-            text-align: center;
-        }
-        .conversation-empty-icon {
-            color: #64748b;
-            font-size: 2rem;
-        }
-        .conversation-empty-title {
-            color: #e2e8f0;
-            font-weight: 500;
-            font-size: 0.875rem;
-            margin: 0;
-        }
-        .conversation-empty-description {
-            color: #94a3b8;
-            font-size: 0.875rem;
-            margin: 0;
-        }
-        .message {
-            display: flex;
-            margin-bottom: 1rem;
-            gap: 0.75rem;
-        }
-        .message-user {
-            justify-content: flex-end;
-        }
-        .message-bubble {
-            max-width: 70%;
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            font-size: 0.875rem;
-            line-height: 1.5;
-            word-wrap: break-word;
-        }
-        .message-user-bubble {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: #0a0f18;
-            font-weight: 500;
-        }
-        .message-assistant-bubble {
-            background: rgba(30, 41, 59, 0.8);
-            color: #e2e8f0;
-            border-left: 3px solid #3b82f6;
-        }
-        .download-button {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            padding: 0.5rem;
-            background: rgba(51, 65, 85, 0.5);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 0.375rem;
-            color: #e2e8f0;
-            cursor: pointer;
-            font-size: 0.75rem;
-            transition: all 0.2s ease;
-            z-index: 10;
-        }
-        .download-button:hover {
-            background: rgba(71, 85, 105, 0.5);
-            border-color: rgba(71, 85, 105, 0.6);
-        }
-        .scroll-button {
-            position: absolute;
-            bottom: 1rem;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 0.5rem;
-            background: rgba(51, 65, 85, 0.5);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 50%;
-            color: #e2e8f0;
-            cursor: pointer;
-            font-size: 0.875rem;
-            transition: all 0.2s ease;
-            z-index: 10;
-        }
-        .scroll-button:hover {
-            background: rgba(71, 85, 105, 0.5);
-            border-color: rgba(71, 85, 105, 0.6);
-        }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Layout with columns for positioning
-    col_main, col_download = st.columns([20, 1])
-    
-    with col_main:
-        st.markdown("### Conversation")
-    
-    # Conversation component
-    st.markdown('<div class="conversation-wrapper">', unsafe_allow_html=True)
-    
-    # Empty state or message list
-    if not st.session_state.ai_messages:
-        st.markdown("""
-        <div class="conversation-empty-state">
-            <div class="conversation-empty-icon">💬</div>
-            <h3 class="conversation-empty-title">No messages yet</h3>
-            <p class="conversation-empty-description">Start a conversation to see messages here</p>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="conversation-content">', unsafe_allow_html=True)
-        
-        for message in st.session_state.ai_messages:
-            if message["role"] == "user":
-                st.markdown(f"""
-                <div class="message message-user">
-                    <div class="message-bubble message-user-bubble">
-                        {message['content']}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                <div class="message">
-                    <div class="message-bubble message-assistant-bubble">
-                        {message['content']}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Download button
-    if st.session_state.ai_messages:
-        st.markdown("""
-        <button class="download-button" onclick="
-            const messages = %s;
-            let markdown = '';
-            messages.forEach((msg, i) => {
-                const role = msg.role.charAt(0).toUpperCase() + msg.role.slice(1);
-                markdown += '**' + role + ':** ' + msg.content + '\\n\\n';
-            });
-            const blob = new Blob([markdown], { type: 'text/markdown' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'conversation.md';
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            URL.revokeObjectURL(url);
-        " title="Download conversation">📥</button>
-        """ % st.session_state.ai_messages, unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Input section
-    st.markdown("---")
-    
-    # Suggestions
-    suggestions = [
-        "How do I calculate RT60 for a 60 m³ control room?",
-        "Explain axial vs tangential room modes with an example.",
-        "What's the difference between STC and IIC ratings?",
-        "How thick should a porous absorber be to work at 100 Hz?"
-    ]
-    
-    st.markdown("**Suggestions:**")
-    cols = st.columns(2)
-    for idx, suggestion in enumerate(suggestions):
-        with cols[idx % 2]:
-            if st.button(suggestion, key=f"ai_suggestion_{idx}", use_container_width=True):
-                st.session_state.ai_messages.append({"role": "user", "content": suggestion})
-                response = generate_ai_response(suggestion)
-                st.session_state.ai_messages.append({"role": "assistant", "content": response})
-                st.rerun()
-    
-    st.markdown("---")
-    
-    # Input textarea
-    user_input = st.text_area(
-        "Message",
-        value=st.session_state.ai_input,
-        placeholder="Ask about RT60, room modes, absorbers, measurement...",
-        height=100,
-        label_visibility="collapsed"
-    )
-    
-    st.session_state.ai_input = user_input
-    
-    # Submit button
-    if st.button("Send Message", use_container_width=True, type="primary", key="ai_send"):
-        if user_input.strip():
-            st.session_state.ai_messages.append({"role": "user", "content": user_input})
-            response = generate_ai_response(user_input)
-            st.session_state.ai_messages.append({"role": "assistant", "content": response})
-            st.session_state.ai_input = ""
-            st.rerun()
+    render_acoustic_ai_chat()
 
 # ============================================================================
 # TAB 5: ACOUSTIC RESOURCES
@@ -1970,3 +1704,51 @@ with tab_resources:
         - Place monitor speakers ±30° from listening position
         - Maintain 38% absorption to avoid over-damping
         """)
+
+# ============================================================================
+# TAB 6: ACOUSTIC ATLAS (AI CHAT)
+# This tab provides direct access to the Acoustic Atlas AI chat interface
+# ============================================================================
+with tab_atlas:
+    st.markdown("""
+    <div style='text-align: center; margin-bottom: 2rem;'>
+        <h2 style='font-size: 2em; font-weight: 700; color: #e2e8f0; margin-bottom: 0.5rem;'>🎵 Acoustic Atlas</h2>
+        <p style='color: #cbd5e1; font-size: 1.05em; margin: 0;'>Advanced AI-powered acoustic consultation</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05)); 
+                border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 2rem; text-align: center; margin-bottom: 2rem;'>
+        <p style='color: #cbd5e1; font-size: 1em; margin: 0.5rem 0; line-height: 1.6;'>
+            Acoustic Atlas is a modern, interactive AI chat interface built with Next.js. 
+            It provides intelligent responses to your acoustic questions with a sleek, responsive design.
+        </p>
+        <p style='color: #94a3b8; font-size: 0.95em; margin: 1rem 0 0 0;'>
+            <strong>Technology:</strong> Next.js 15 • React 19 • TypeScript • Tailwind CSS
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        if st.button("🚀 Open Acoustic Atlas", use_container_width=True, key="open_atlas"):
+            st.markdown("""
+            <meta http-equiv="refresh" content="0; url=http://localhost:3000" />
+            """, unsafe_allow_html=True)
+            st.success("Redirecting to Acoustic Atlas...")
+        
+        # Alternative: Display the link directly
+        st.markdown("""
+        <div style='margin-top: 2rem; padding: 1.5rem; background: rgba(30, 41, 59, 0.5); border-radius: 10px;'>
+            <p style='color: #cbd5e1; margin: 0 0 1rem 0; text-align: center;'>
+                💡 <strong>Tip:</strong> You can also access Acoustic Atlas directly at:
+            </p>
+            <p style='text-align: center; margin: 0;'>
+                <a href='http://localhost:3000' target='_blank' style='color: #60a5fa; text-decoration: none; font-weight: 600; font-size: 1.05em;'>
+                    http://localhost:3000 ↗
+                </a>
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
