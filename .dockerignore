@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Tests
+test_*.py
+*_test.py
+
+# Firebase / deployment artifacts
+.firebase/
+firebase.json
+.firebaserc
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.agents/
+skills-lock.json
+
+# Misc
+README.md
+*.md
