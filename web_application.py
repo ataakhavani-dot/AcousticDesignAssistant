@@ -1526,7 +1526,12 @@ with tab_sbir:
 # Public Acoustic Atlas chat with local validation and multi-turn context
 # ============================================================================
 with tab_ai:
-    render_acoustic_ai_chat()
+    render_acoustic_ai_chat(
+        room_context=(
+            f"Length {L:.1f} m, width {W:.1f} m, height {H:.1f} m, "
+            f"volume {volume:.1f} m^3."
+        )
+    )
 
 # ============================================================================
 # TAB 5: ACOUSTIC RESOURCES

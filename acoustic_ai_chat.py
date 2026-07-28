@@ -8,8 +8,9 @@ from acoustic_ai import (
     DEFAULT_SUGGESTED_QUESTIONS,
     MAXIMUM_CHARACTERS,
     AcousticAIError,
-    ask_acoustic_ai,
     build_conversation,
+    build_system_prompt,
+    stream_acoustic_ai,
     validate_question,
 )
 
@@ -19,10 +20,11 @@ SUGGESTIONS_KEY = "acoustic_atlas_suggestions"
 ERROR_KEY = "acoustic_atlas_error"
 
 
-def render_acoustic_ai_chat() -> None:
+def render_acoustic_ai_chat(room_context: str | None = None) -> None:
     """Render the API-backed Acoustic Atlas conversation."""
     _initialize_state()
     _inject_styles()
+    system_prompt = build_system_prompt(room_context)
 
     title_column, clear_column = st.columns([8, 1])
     with title_column:
@@ -42,13 +44,11 @@ def render_acoustic_ai_chat() -> None:
                 _reset_conversation()
                 st.rerun()
 
-    with st.container(border=True):
-        if st.session_state[MESSAGES_KEY]:
-            _render_messages()
-        else:
-            _render_empty_state()
+    chat_container = st.container(border=True)
+    conversation_slot = chat_container.empty()
+    _render_conversation(conversation_slot, system_prompt)
 
-    _render_composer()
+    _render_composer(conversation_slot, system_prompt)
 
 
 def _initialize_state() -> None:
@@ -127,7 +127,15 @@ def _inject_styles() -> None:
     )
 
 
-def _render_empty_state() -> None:
+def _render_conversation(conversation_slot, system_prompt: str) -> None:
+    with conversation_slot.container():
+        if st.session_state[MESSAGES_KEY]:
+            _render_messages()
+        else:
+            _render_empty_state(conversation_slot, system_prompt)
+
+
+def _render_empty_state(conversation_slot, system_prompt: str) -> None:
     st.markdown(
         """
         <div class="acoustic-atlas-welcome">
@@ -149,7 +157,7 @@ def _render_empty_state() -> None:
                     key=f"acoustic_atlas_suggestion_{index}",
                     use_container_width=True,
                 ):
-                    _submit_question(suggestion)
+                    _submit_question(suggestion, conversation_slot, system_prompt)
                     st.rerun()
 
 
@@ -159,47 +167,57 @@ def _render_messages() -> None:
             st.markdown(message["content"])
 
 
-def _render_composer() -> None:
+def _render_composer(conversation_slot, system_prompt: str) -> None:
     error_message = st.session_state[ERROR_KEY]
     if error_message:
         st.error(error_message)
     else:
-        st.caption("Use at least four words. Questions are checked before they are sent.")
+        st.caption("Live answers stream as they are generated. Use at least four words before sending.")
 
     question = st.chat_input(
         "Ask Acoustic Atlas about sound in your space",
         key="acoustic_atlas_input",
-        max_chars=MAXIMUM_CHARACTERS,
+        max_chars=MAXIMUM_CHARACTERS - len(system_prompt),
     )
     if question:
-        _submit_question(question)
+        _submit_question(question, conversation_slot, system_prompt)
         st.rerun()
 
 
-def _submit_question(question: str) -> None:
-    validation_error = validate_question(question)
+def _submit_question(question: str, conversation_slot, system_prompt: str) -> None:
+    validation_error = validate_question(question, system_prompt=system_prompt)
     if validation_error:
         st.session_state[ERROR_KEY] = validation_error
         return
 
     st.session_state[ERROR_KEY] = None
     messages = st.session_state[MESSAGES_KEY]
-    conversation = build_conversation(messages, question)
+    conversation = build_conversation(messages, question, system_prompt=system_prompt)
 
     try:
-        with st.spinner("Acoustic Atlas is thinking..."):
-            response = ask_acoustic_ai(conversation)
+        with conversation_slot.container():
+            _render_messages()
+            with st.chat_message("user"):
+                st.markdown(question.strip())
+            with st.chat_message("assistant"):
+                progress_placeholder = st.empty()
+                progress_placeholder.caption("Acoustic Atlas is preparing a response...")
+                reply = st.write_stream(stream_acoustic_ai(conversation))
+                progress_placeholder.empty()
     except AcousticAIError as error:
         st.session_state[ERROR_KEY] = str(error)
+        return
+
+    if not isinstance(reply, str) or not reply.strip():
+        st.session_state[ERROR_KEY] = "Acoustic Atlas returned an incomplete response. Please try again."
         return
 
     messages.extend(
         [
             {"role": "user", "content": question.strip()},
-            {"role": "assistant", "content": response.reply},
+            {"role": "assistant", "content": reply.strip()},
         ]
     )
-    st.session_state[SUGGESTIONS_KEY] = list(response.suggested_questions)
 
 
 def _reset_conversation() -> None:
