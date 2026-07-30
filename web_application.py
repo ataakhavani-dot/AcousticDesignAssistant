@@ -14,6 +14,7 @@ import plotly.express as px      # A simpler way to make charts with plotly
 from acoustic_ai_chat import render_acoustic_ai_chat
 from audio_library import render_audio_carousel_bar
 from digital_lab import render_digital_lab
+from experiment_simulator import render_experiment_simulator
 # ============================================================================
 # SECTION 2: PAGE CONFIGURATION & STYLING
 # This sets up how the web page will look and behave
@@ -1726,6 +1727,8 @@ with tab_advance_tool:
 
 with tab_digital_lab:
     render_digital_lab()
+    st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+    render_experiment_simulator()
 
 with tab_gallery:
     st.markdown("### Audio Gallery")
