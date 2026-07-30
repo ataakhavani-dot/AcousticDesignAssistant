@@ -12,6 +12,7 @@ import pandas as pd              # For organizing data into tables (like Excel)
 import plotly.graph_objects as go  # For creating interactive charts and graphs
 import plotly.express as px      # A simpler way to make charts with plotly
 from acoustic_ai_chat import render_acoustic_ai_chat
+from audio_library import render_audio_carousel_bar
 # ============================================================================
 # SECTION 2: PAGE CONFIGURATION & STYLING
 # This sets up how the web page will look and behave
@@ -1080,13 +1081,15 @@ st.markdown("---")
 # --- CREATE TABS ---
 # Tabs are like pages within a page - clicking each tab shows different content
 # st.tabs() creates the tab buttons at the top
-tab_modes, tab_rt60, tab_sbir, tab_ai, tab_resources, tab_atlas = st.tabs([
+tab_modes, tab_rt60, tab_sbir, tab_ai, tab_advance_tool, tab_digital_lab, tab_gallery, tab_resources = st.tabs([
     "📊 Modal Analysis",  # Tab 1: Analyze room modes
     "⏱️ RT60 Calculator",  # Tab 2: Calculate how long sound lasts in the room
     "📡 SBIR Analysis",  # Tab 3: Analyze speaker-wall interference
     "🤖 Acoustics AI",  # Tab 4: AI chat assistant
-    "📚 Resources",  # Tab 5: Acoustic learning resources
-    "🎵 Acoustic Atlas"  # Tab 6: AI chat interface (Next.js)
+    "Advance Tool",
+    "Digital Lab",
+    "Gallery",
+    "📚 Resources",  # Acoustic learning resources
 ])
 
 # ============================================================================
@@ -1228,7 +1231,7 @@ with tab_modes:
     )
 
     st.markdown("<div id='audio-explanation-section'></div>", unsafe_allow_html=True)
-    render_audio_carousel()
+    render_audio_carousel_bar("Related to modal analysis", "modal")
 
     # Add two native informational cards beneath the Glass Box section
     st.markdown("<div id='acoustic-insights-section'></div>", unsafe_allow_html=True)
@@ -1389,6 +1392,8 @@ with tab_rt60:
         ]
     )
 
+    render_audio_carousel_bar("Related to reverberation", "rt60")
+
     # Add two native informational cards beneath the Glass Box section
     col1, col2 = st.columns(2)
     with col1:
@@ -1506,6 +1511,8 @@ with tab_sbir:
             f"Apply the quarter-wavelength relationship to estimate the dip frequency: {f_front} Hz"
         ]
     )
+
+    render_audio_carousel_bar("Related to speaker placement", "sbir")
 
     # Add two native informational cards beneath the Glass Box section
     col1, col2 = st.columns(2)
@@ -1711,49 +1718,14 @@ with tab_resources:
         """)
 
 # ============================================================================
-# TAB 6: ACOUSTIC ATLAS (AI CHAT)
-# This tab provides direct access to the Acoustic Atlas AI chat interface
+# TABS 6-8: PLACEHOLDERS
 # ============================================================================
-with tab_atlas:
-    st.markdown("""
-    <div style='text-align: center; margin-bottom: 2rem;'>
-        <h2 style='font-size: 2em; font-weight: 700; color: #e2e8f0; margin-bottom: 0.5rem;'>🎵 Acoustic Atlas</h2>
-        <p style='color: #cbd5e1; font-size: 1.05em; margin: 0;'>Advanced AI-powered acoustic consultation</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div style='background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05)); 
-                border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 2rem; text-align: center; margin-bottom: 2rem;'>
-        <p style='color: #cbd5e1; font-size: 1em; margin: 0.5rem 0; line-height: 1.6;'>
-            Acoustic Atlas is a modern, interactive AI chat interface built with Next.js. 
-            It provides intelligent responses to your acoustic questions with a sleek, responsive design.
-        </p>
-        <p style='color: #94a3b8; font-size: 0.95em; margin: 1rem 0 0 0;'>
-            <strong>Technology:</strong> Next.js 15 • React 19 • TypeScript • Tailwind CSS
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([1, 2, 1])
-    
-    with col2:
-        if st.button("🚀 Open Acoustic Atlas", use_container_width=True, key="open_atlas"):
-            st.markdown("""
-            <meta http-equiv="refresh" content="0; url=http://localhost:3000" />
-            """, unsafe_allow_html=True)
-            st.success("Redirecting to Acoustic Atlas...")
-        
-        # Alternative: Display the link directly
-        st.markdown("""
-        <div style='margin-top: 2rem; padding: 1.5rem; background: rgba(30, 41, 59, 0.5); border-radius: 10px;'>
-            <p style='color: #cbd5e1; margin: 0 0 1rem 0; text-align: center;'>
-                💡 <strong>Tip:</strong> You can also access Acoustic Atlas directly at:
-            </p>
-            <p style='text-align: center; margin: 0;'>
-                <a href='http://localhost:3000' target='_blank' style='color: #60a5fa; text-decoration: none; font-weight: 600; font-size: 1.05em;'>
-                    http://localhost:3000 ↗
-                </a>
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+with tab_advance_tool:
+    pass
+
+with tab_digital_lab:
+    pass
+
+with tab_gallery:
+    st.markdown("### Audio Gallery")
+    render_audio_carousel_bar("All audio guides", "gallery")
