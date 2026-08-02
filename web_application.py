@@ -15,6 +15,7 @@ from acoustic_ai_chat import render_acoustic_ai_chat
 from audio_library import render_audio_carousel_bar
 from digital_lab import render_digital_lab
 from experiment_simulator import render_experiment_simulator
+from room_simulator import render_room_simulator
 # ============================================================================
 # SECTION 2: PAGE CONFIGURATION & STYLING
 # This sets up how the web page will look and behave
@@ -1720,10 +1721,23 @@ with tab_resources:
         """)
 
 # ============================================================================
-# TABS 6-8: PLACEHOLDERS
+# TAB 5: ADVANCE TOOL — INTERACTIVE 2-D / 3-D ROOM VIEW
 # ============================================================================
 with tab_advance_tool:
-    pass
+    st.markdown("### Interactive Room View")
+    st.markdown(
+        "Draw the room outline corner by corner, pick a material per surface, and "
+        "drag sound sources and the listener around. Reverberation, modes and sound "
+        "pressure levels update live. Switch between the 2-D plan and an orbiting "
+        "3-D view. The room starts from the Room Geometry sliders above — move a "
+        "slider to reset it, or edit the outline here to explore a shape the "
+        "sliders can't describe (L-shapes, angled walls)."
+    )
+    render_room_simulator(L, W, H)
+
+# ============================================================================
+# TABS 6-8: DIGITAL LAB, GALLERY, RESOURCES
+# ============================================================================
 
 with tab_digital_lab:
     render_digital_lab()

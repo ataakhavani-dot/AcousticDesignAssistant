@@ -16,8 +16,11 @@ WORKDIR /app
 COPY --from=build /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=build /usr/local/bin /usr/local/bin
 
-# Copy application source
-COPY acoustic_ai.py acoustic_ai_chat.py web_application.py ./
+# Copy application source. Every module web_application.py imports must be
+# listed here, plus static/ for the room simulator's JS and CSS assets.
+COPY acoustic_ai.py acoustic_ai_chat.py audio_library.py digital_lab.py \
+     experiment_simulator.py room_simulator.py web_application.py ./
+COPY static/ ./static/
 
 # Cloud Run injects PORT env var; default to 8080
 ENV PORT=8080
