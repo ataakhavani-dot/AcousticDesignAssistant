@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Room Acoustics Simulator</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <h1>Room Acoustics Simulator</h1>
+      <p class="lede">
+        Draw your room outline corner by corner (or start from the rectangle),
+        pick a material for each wall, and place sound sources and a listener.
+        Reverberation, room modes, and sound pressure levels update live as you
+        drag. Flip between the 2-D plan and a 3-D view you can orbit. The URL
+        tracks your setup, so you can bookmark or share it.
+      </p>
+    </header>
+
+    <div class="layout">
+      <div class="col-main">
+        <div class="card" id="roomCard">
+          <div class="card-head">
+            <h2>Room view</h2>
+            <div class="map-controls">
+              <div class="view-toggle" id="viewToggle" role="group" aria-label="View mode">
+                <button type="button" data-view="plan" aria-pressed="true">Plan</button>
+                <button type="button" data-view="3d" aria-pressed="false">3D</button>
+              </div>
+              <label><input type="checkbox" id="heatmapOn" checked> SPL heat map</label>
+              <label>Band<select id="heatmapBand" aria-label="Heat map octave band"></select></label>
+              <label><input type="checkbox" id="wavesOn"> Wave fronts</label>
+              <button type="button" id="fsBtn" class="ghost-btn" aria-pressed="false"
+                title="Toggle full screen">⛶ Full screen</button>
+            </div>
+          </div>
+          <div class="canvas-wrap" id="canvasWrap">
+            <canvas id="floorplan" aria-label="Room floor plan with draggable sources and listener"></canvas>
+            <div class="canvas-tip" id="canvasTip" hidden></div>
+          </div>
+          <div class="canvas-wrap" id="canvasWrap3d" hidden>
+            <canvas id="room3d" aria-label="3-D room view; drag to orbit, drag markers to move them"></canvas>
+            <div class="canvas-tip" id="canvasTip3d" hidden></div>
+          </div>
+          <div class="colorbar-row" id="colorbarRow" hidden>
+            <span class="cb-label" id="cbMin"></span>
+            <div class="colorbar" id="colorbar"></div>
+            <span class="cb-label" id="cbMax"></span>
+          </div>
+          <div class="cb-band" id="cbBand"></div>
+          <p class="hint" id="canvasHint">
+            Drag the numbered sources, the listener (L), and the corner handles.
+            Click a wall to jump to its material. Hover anywhere in the room for
+            the level at that spot. Use “Draw room outline” to sketch any shape —
+            L-shapes, angled walls, whatever your space is.
+          </p>
+        </div>
+
+        <section class="tiles" id="tiles" aria-label="Key figures"></section>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Reverberation time RT60</h2>
+            <div class="legend" id="rtLegend"></div>
+          </div>
+          <div id="rtChart"></div>
+          <details>
+            <summary>View as table</summary>
+            <table class="data-table" id="rtTable"></table>
+          </details>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>SPL at the listener</h2>
+          </div>
+          <p class="chart-sub" id="splSummary"></p>
+          <div id="splChart"></div>
+          <details>
+            <summary>View as table</summary>
+            <table class="data-table" id="splTable"></table>
+          </details>
+          <p class="footnote">
+            Steady-state model: Lp = Lw + 10·log₁₀(Q/4πr² + 4/R), energy-summed
+            over sources. Sources are treated as flat-spectrum (the same Lw in
+            every band), so the per-band shape shows what the room does.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Room modes</h2>
+            <div class="legend" id="modeLegend"></div>
+          </div>
+          <div id="modeChart"></div>
+          <p class="footnote" id="modeNote"></p>
+          <details>
+            <summary>First modes as table</summary>
+            <table class="data-table" id="modeTable"></table>
+          </details>
+        </div>
+      </div>
+
+      <aside class="col-side">
+        <div class="card">
+          <h2>Room</h2>
+          <div class="room-fields" id="roomFields" style="margin-top:10px"></div>
+        </div>
+
+        <div class="card">
+          <h2>Surfaces</h2>
+          <div id="surfaceList" style="margin-top:10px"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Sources</h2>
+            <button type="button" id="addSource">+ Add source</button>
+          </div>
+          <div id="sourceList"></div>
+        </div>
+
+        <div class="card">
+          <h2>Listener</h2>
+          <div class="field-grid" id="listenerFields" style="margin-top:10px"></div>
+        </div>
+      </aside>
+    </div>
+
+    <footer class="app-footer">
+      <p>
+        Assumptions: the room is a straight-walled prism (any polygon floor
+        plan, constant height). Statistical formulas (Sabine, Eyring) assume a
+        reasonably diffuse field and are most reliable above the Schroeder
+        frequency; the mode list assumes rigid walls and a rectangular plan.
+        Absorption coefficients, RT60, modal and Bolt-area calculations use
+        ADA's own physics engine, so they match the Modal Analysis and RT60
+        Calculator tabs. The steady-state SPL model and heat map have no
+        counterpart in those tabs — ADA models no sound field — but they are
+        driven by the same absorption figures. See
+        <code>static/roomsim/js/engine.js</code>.
+      </p>
+    </footer>
+  </div>
+
+  <script src="js/engine.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/view3d.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
