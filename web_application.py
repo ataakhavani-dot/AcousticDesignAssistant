@@ -31,11 +31,16 @@ st.set_page_config(
     initial_sidebar_state="expanded"  # Show sidebar by default
 )
 
-# Initialize session state for navigation
-if 'nav_target' not in st.session_state:
-    st.session_state.nav_target = None
-
-# No query params needed - we'll use hash-based navigation
+# Stable tool identifiers keep sidebar links and native Streamlit tabs in sync.
+TOOL_TABS = {
+    "modal": "📊 Modal Analysis",
+    "rt60": "⏱️ RT60 Calculator",
+    "sbir": "📡 SBIR Analysis",
+    "advance": "Advance Tool",
+}
+active_tool = st.query_params.get("tool", "modal")
+if active_tool not in TOOL_TABS:
+    active_tool = "modal"
 
 
 # CUSTOM CSS STYLING
@@ -234,6 +239,445 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)  # unsafe_allow_html=True lets us use custom HTML/CSS
 
+st.markdown("""
+<style>
+    html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 1.25rem;
+    }
+    [data-testid="stHeader"] {
+        display: block !important;
+        height: 0 !important;
+        background: transparent !important;
+        pointer-events: none !important;
+    }
+    [data-testid="stToolbar"] {
+        display: block !important;
+        background: transparent !important;
+        pointer-events: none !important;
+    }
+    [data-testid="stHeaderActionElements"],
+    [data-testid="stToolbarActions"],
+    [data-testid="stAppDeployButton"],
+    [data-testid="stMainMenu"] {
+        display: none !important;
+    }
+    [data-testid="stExpandSidebarButton"] {
+        display: grid !important;
+        position: fixed !important;
+        top: 0.85rem !important;
+        left: 0.85rem !important;
+        z-index: 1001 !important;
+        width: 2.5rem !important;
+        height: 2.5rem !important;
+        border: 1px solid rgba(125, 211, 252, 0.44) !important;
+        border-radius: 8px !important;
+        background: rgba(15, 23, 42, 0.94) !important;
+        color: #dbeafe !important;
+        box-shadow: 0 0.75rem 1.8rem rgba(2, 6, 23, 0.3) !important;
+        pointer-events: auto !important;
+        transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease !important;
+    }
+    [data-testid="stExpandSidebarButton"]:hover,
+    [data-testid="stExpandSidebarButton"]:focus-visible {
+        border-color: #7dd3fc !important;
+        background: #172554 !important;
+        outline: none !important;
+        transform: translateY(-1px) !important;
+    }
+    [data-testid="stMainBlockContainer"] {
+        max-width: 1440px;
+        padding: 1rem 1.5rem 4rem !important;
+    }
+    div[data-testid="stMetric"],
+    [data-testid="stContainer"],
+    div[data-testid="stExpander"] {
+        border-radius: 8px !important;
+    }
+    div[data-testid="stMetric"] {
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        background: rgba(30, 41, 59, 0.68);
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0.35rem;
+        padding: 0.45rem;
+        overflow-x: auto;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 8px;
+        scrollbar-width: thin;
+        scroll-snap-type: x proximity;
+    }
+    .stTabs [data-baseweb="tab"] {
+        flex: 0 0 auto;
+        min-height: 2.65rem;
+        padding: 0.55rem 0.85rem;
+        border-radius: 6px;
+        scroll-snap-align: start;
+    }
+    .stTabs [aria-selected="true"] {
+        background: rgba(96, 165, 250, 0.12);
+        color: #bfdbfe !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {
+        padding: 1.25rem 1rem 1.5rem !important;
+    }
+    .ada-sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.35rem 0.5rem 1rem;
+    }
+    .ada-sidebar-mark {
+        display: grid;
+        place-items: center;
+        width: 2rem;
+        height: 2rem;
+        border: 1px solid rgba(96, 165, 250, 0.35);
+        border-radius: 8px;
+        background: rgba(96, 165, 250, 0.1);
+        color: #bfdbfe;
+        font-size: 0.7rem;
+        font-weight: 800;
+    }
+    .ada-sidebar-name {
+        color: #f8fafc;
+        font-size: 1.05rem;
+        font-weight: 750;
+        line-height: 1.05;
+    }
+    .ada-sidebar-subtitle {
+        margin-top: 0.22rem;
+        color: #94a3b8;
+        font-size: 0.72rem;
+        line-height: 1.2;
+    }
+    .ada-nav-group {
+        margin: 1rem 0 0.35rem;
+        padding: 0 0.55rem;
+        color: #64748b;
+        font-size: 0.67rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+    .ada-nav-link {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        min-height: 2.55rem;
+        margin: 0.12rem 0;
+        padding: 0.55rem 0.65rem;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        color: #cbd5e1 !important;
+        font-size: 0.88rem;
+        font-weight: 600;
+        line-height: 1.2;
+        text-decoration: none !important;
+        transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+    }
+    .ada-nav-link:hover,
+    .ada-nav-link:focus-visible {
+        border-color: rgba(96, 165, 250, 0.28);
+        background: rgba(96, 165, 250, 0.1);
+        color: #f8fafc !important;
+        outline: none;
+    }
+    .ada-nav-link.is-active {
+        border-color: rgba(96, 165, 250, 0.32);
+        background: rgba(96, 165, 250, 0.14);
+        color: #ffffff !important;
+    }
+    .ada-nav-icon {
+        display: inline-grid;
+        place-items: center;
+        flex: 0 0 1.25rem;
+        width: 1.25rem;
+        font-size: 1rem;
+        text-align: center;
+    }
+    .ada-app-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        padding: 0.95rem 0.2rem 1.1rem;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    }
+    .ada-app-brand {
+        min-width: 0;
+    }
+    .ada-app-name {
+        color: #f8fafc;
+        font-size: 1.12rem;
+        font-weight: 750;
+        line-height: 1.2;
+    }
+    .ada-app-description {
+        margin-top: 0.25rem;
+        color: #a8b7ca;
+        font-size: 0.84rem;
+        line-height: 1.45;
+    }
+    .ada-header-actions {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 0.55rem;
+    }
+    .ada-purpose-link,
+    .ada-ai-link {
+        display: inline-grid;
+        place-items: center;
+        min-height: 2.5rem;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 8px;
+        color: #dbeafe !important;
+        text-decoration: none !important;
+        transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+    }
+    .ada-purpose-link {
+        padding: 0.45rem 0.8rem;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+    .ada-ai-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.45rem 0.8rem;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+    .ada-tab-anchor {
+        height: 0;
+        scroll-margin-top: 1rem;
+    }
+    .ada-purpose-link:hover,
+    .ada-purpose-link:focus-visible,
+    .ada-ai-link:hover,
+    .ada-ai-link:focus-visible {
+        border-color: rgba(125, 211, 252, 0.72);
+        background: rgba(56, 189, 248, 0.12);
+        outline: none;
+        transform: translateY(-1px);
+    }
+    .ada-hero {
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        min-height: clamp(22rem, 54vh, 34rem);
+        margin-bottom: clamp(2.5rem, 6vw, 5rem);
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 8px;
+        background-position: center;
+        background-size: cover;
+        isolation: isolate;
+    }
+    .ada-hero::after {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        content: "";
+        background: linear-gradient(90deg, rgba(7, 14, 27, 0.91) 0%, rgba(7, 14, 27, 0.67) 56%, rgba(7, 14, 27, 0.3) 100%);
+    }
+    .ada-hero-content {
+        max-width: 48rem;
+        padding: clamp(2rem, 6vw, 5rem);
+        animation: ada-rise-in 700ms ease-out both;
+    }
+    .ada-hero-kicker,
+    .ada-section-kicker {
+        margin: 0 0 0.75rem;
+        color: #7dd3fc;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+    .ada-hero-title {
+        max-width: 13ch;
+        margin: 0;
+        color: #ffffff;
+        font-size: clamp(2.35rem, 5.2vw, 4.95rem);
+        font-weight: 760;
+        letter-spacing: 0;
+        line-height: 0.98;
+        text-wrap: balance;
+    }
+    .ada-hero-title span {
+        color: #7dd3fc;
+    }
+    .ada-hero-copy {
+        max-width: 37rem;
+        margin: 1.25rem 0 0;
+        color: #d8e4ef;
+        font-size: clamp(0.94rem, 1.4vw, 1.08rem);
+        line-height: 1.6;
+    }
+    .ada-soundstage {
+        position: absolute;
+        right: clamp(1.2rem, 7vw, 7rem);
+        bottom: clamp(1.2rem, 7vw, 4.5rem);
+        z-index: -1;
+        display: flex;
+        align-items: center;
+        gap: clamp(0.3rem, 0.8vw, 0.62rem);
+        height: clamp(8rem, 22vw, 14rem);
+        opacity: 0.72;
+        transform: skewX(-7deg);
+    }
+    .ada-soundstage span {
+        display: block;
+        width: clamp(0.34rem, 0.8vw, 0.58rem);
+        height: 20%;
+        border-radius: 999px;
+        background: #7dd3fc;
+        box-shadow: 0 0 1.3rem rgba(125, 211, 252, 0.42);
+        transform-origin: center;
+        animation: ada-equalize 1.4s ease-in-out infinite alternate;
+    }
+    .ada-soundstage span:nth-child(2) { animation-delay: -0.38s; }
+    .ada-soundstage span:nth-child(3) { animation-delay: -0.85s; }
+    .ada-soundstage span:nth-child(4) { animation-delay: -0.18s; }
+    .ada-soundstage span:nth-child(5) { animation-delay: -0.62s; }
+    .ada-soundstage span:nth-child(6) { animation-delay: -1.08s; }
+    .ada-soundstage span:nth-child(7) { animation-delay: -0.46s; }
+    .ada-soundstage span:nth-child(8) { animation-delay: -0.94s; }
+    .ada-section-anchor {
+        scroll-margin-top: 1.25rem;
+    }
+    .ada-room-heading,
+    .ada-section-heading {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+    .ada-room-heading h2,
+    .ada-section-heading h2 {
+        margin: 0;
+        color: #f8fafc;
+        font-size: clamp(1.55rem, 2.6vw, 2.2rem);
+        letter-spacing: 0;
+        line-height: 1.08;
+    }
+    .ada-room-heading p,
+    .ada-section-heading p {
+        max-width: 40rem;
+        margin: 0.55rem 0 0;
+        color: #a8b7ca;
+        font-size: 0.94rem;
+        line-height: 1.55;
+    }
+    .ada-purpose-band {
+        margin-top: clamp(3.5rem, 8vw, 7rem);
+        padding: clamp(2rem, 5vw, 4rem) 0;
+        border-top: 1px solid rgba(148, 163, 184, 0.18);
+        border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    }
+    .ada-purpose-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-top: 2.2rem;
+        border-top: 1px solid rgba(148, 163, 184, 0.16);
+    }
+    .ada-purpose-step {
+        min-height: 10rem;
+        padding: 1.35rem 1.4rem 1.1rem 0;
+        border-right: 1px solid rgba(148, 163, 184, 0.16);
+    }
+    .ada-purpose-step + .ada-purpose-step {
+        padding-left: 1.4rem;
+    }
+    .ada-purpose-step:last-child {
+        border-right: 0;
+    }
+    .ada-purpose-number {
+        color: #7dd3fc;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+    }
+    .ada-purpose-step h3 {
+        margin: 0.75rem 0 0.5rem;
+        color: #f8fafc;
+        font-size: 1.02rem;
+    }
+    .ada-purpose-step p {
+        margin: 0;
+        color: #a8b7ca;
+        font-size: 0.88rem;
+        line-height: 1.55;
+    }
+    .ada-explore-section {
+        margin-top: clamp(3.5rem, 8vw, 6.5rem);
+        padding-top: clamp(1.8rem, 4vw, 3.25rem);
+        border-top: 1px solid rgba(148, 163, 184, 0.18);
+    }
+    @keyframes ada-equalize {
+        0% { height: 18%; opacity: 0.52; }
+        100% { height: 94%; opacity: 1; }
+    }
+    @keyframes ada-rise-in {
+        from { opacity: 0; transform: translateY(1rem); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 700px) {
+        [data-testid="stMainBlockContainer"] {
+            padding: 0.65rem 0.85rem 3rem !important;
+        }
+        .ada-app-header {
+            align-items: flex-start;
+            padding-top: 0.65rem;
+        }
+        .ada-app-description {
+            max-width: 15rem;
+        }
+        .ada-hero {
+            min-height: 28rem;
+        }
+        .ada-hero::after {
+            background: linear-gradient(180deg, rgba(7, 14, 27, 0.77) 0%, rgba(7, 14, 27, 0.94) 100%);
+        }
+        .ada-hero-content {
+            padding: 2rem 1.3rem;
+        }
+        .ada-soundstage {
+            right: 1.2rem;
+            bottom: 1.25rem;
+            height: 7rem;
+            opacity: 0.56;
+        }
+        .ada-room-heading,
+        .ada-section-heading {
+            display: block;
+        }
+        .ada-purpose-grid {
+            grid-template-columns: 1fr;
+        }
+        .ada-purpose-step,
+        .ada-purpose-step + .ada-purpose-step {
+            min-height: 0;
+            padding: 1.25rem 0;
+            border-right: 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+        }
+        .ada-purpose-step:last-child {
+            border-bottom: 0;
+        }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        .ada-hero-content,
+        .ada-soundstage span { animation: none; }
+    }
+</style>
+""", unsafe_allow_html=True)
+
 
 # ============================================================================
 # SECTION 3: DATA LAYER - CONSTANTS & MATERIAL PROPERTIES
@@ -333,7 +777,7 @@ def render_audio_carousel():
     .podcast-card {
         background: #1a1f2e;
         border: 1px solid #2a3544;
-        border-radius: 12px;
+        border-radius: 8px;
         padding: 16px;
         display: flex;
         flex-direction: column;
@@ -788,181 +1232,60 @@ def calculate_sbir_curve(distances):
 # The sidebar is an optional panel on the left side of most web apps
 # We use "with st.sidebar:" to tell Streamlit to put everything inside in the sidebar
 with st.sidebar:
-    st.markdown(
-        "<div style='font-size:1.25rem;font-weight:700;color:#f8fafc;letter-spacing:0.01em;padding:0.5rem 0 0.1rem;'>🌊 ADA</div>"
-        "<div style='font-size:0.8rem;color:#64748b;margin-bottom:0.75rem;'>Acoustic Design Assistant</div>",
-        unsafe_allow_html=True,
-    )
-    st.markdown("<hr style='border-color:rgba(96,165,250,0.2);margin:0.5rem 0 0.75rem;'>", unsafe_allow_html=True)
-    st.markdown("<div style='font-size:0.7rem;font-weight:600;color:#475569;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.5rem;padding-left:0.5rem;'>Navigation</div>", unsafe_allow_html=True)
-
-    # Each item JS-clicks the corresponding Streamlit tab button by index (0-based)
-    NAV_TABS = [
-        ("📊 Modal Analysis",  0),
-        ("⏱️ RT60 Calculator", 1),
-        ("📡 SBIR Analysis",   2),
-        ("🤖 Acoustics AI",    3),
-        ("🏗️ Advance Tool",    4),
-        ("🔬 Digital Lab",     5),
-        ("🖼️ Gallery",         6),
-        ("📚 Resources",       7),
-    ]
-
-    for label, idx in NAV_TABS:
-        st.markdown(
-            f"""<div onclick="
-                var d = (window.parent !== window) ? window.parent.document : document;
-                var tabs = d.querySelectorAll('[data-baseweb=tab-list] button[role=tab]');
-                if (!tabs.length) tabs = d.querySelectorAll('button[role=tab]');
-                if (tabs[{idx}]) tabs[{idx}].click();
-            "
-            style="
-                cursor:pointer;
-                display:flex;
-                align-items:center;
-                gap:0.6rem;
-                padding:0.55rem 0.75rem;
-                border-radius:8px;
-                color:#94a3b8;
-                font-size:0.92rem;
-                font-weight:500;
-                margin-bottom:0.2rem;
-                border:1px solid transparent;
-                transition:all 0.15s ease;
-            "
-            onmouseover="this.style.background='rgba(96,165,250,0.1)';this.style.borderColor='rgba(96,165,250,0.25)';this.style.color='#60a5fa';"
-            onmouseout="this.style.background='transparent';this.style.borderColor='transparent';this.style.color='#94a3b8';">
-                {label}
-            </div>""",
-            unsafe_allow_html=True,
-        )
-
-    st.markdown("<hr style='border-color:rgba(96,165,250,0.2);margin:0.75rem 0 0.5rem;'>", unsafe_allow_html=True)
-    st.markdown("<div style='font-size:0.8rem;color:#475569;line-height:1.5;padding:0.25rem 0.5rem;'>💡 Adjust room dimensions to see real-time updates across all tabs.</div>", unsafe_allow_html=True)
-
-
-# --- MAIN CONTENT AREA - HEADER & ROOM INPUTS ---
-# Create banner with title on left and buttons on right inside the same banner
-st.markdown("""
-<div style="margin: -0.5rem -0.5rem 1rem -0.5rem; padding: 1rem 1.25rem; background-color: #0f172a; border-bottom: 1px solid rgba(96, 165, 250, 0.2); border-radius: 0 0 10px 10px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; gap: 2rem;">
-        <div style="text-align: left;">
-            <div style="font-size: 1.3rem; font-weight: 700; color: #f8fafc;">🎧 Acoustic Design Assistant</div>
-            <div style="font-size: 0.95rem; color: #e2e8f0; margin-top: 0.2rem;">Room acoustics, modal behavior, and reverberation analysis.</div>
-        </div>
-        <div style="display: flex; gap: 0.5rem;" id="nav-buttons-container">
-            <div data-nav-target="calculator-section" style="padding: 0.5rem 1rem; background: #60a5fa; color: white; border: 1px solid rgba(96, 165, 250, 0.5); border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block; transition: all 0.2s ease; user-select: none;">Calculator</div>
-            <div data-nav-target="audio-explanation-section" style="padding: 0.5rem 1rem; background: #60a5fa; color: white; border: 1px solid rgba(96, 165, 250, 0.5); border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block; transition: all 0.2s ease; user-select: none;">Audio Explanation</div>
-            <div data-nav-target="acoustic-insights-section" style="padding: 0.5rem 1rem; background: #60a5fa; color: white; border: 1px solid rgba(96, 165, 250, 0.5); border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none; display: inline-block; transition: all 0.2s ease; user-select: none;">Acoustic Insights</div>
+    st.markdown("""
+    <div class='ada-sidebar-brand'>
+        <div class='ada-sidebar-mark' aria-hidden='true'>ADA</div>
+        <div>
+            <div class='ada-sidebar-name'>ADA</div>
+            <div class='ada-sidebar-subtitle'>Acoustic Design Assistant</div>
         </div>
     </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Find all nav buttons and add click handlers
-    const navButtons = document.querySelectorAll('[data-nav-target]');
-    navButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const targetId = this.getAttribute('data-nav-target');
-            const targetElement = document.getElementById(targetId);
-            if (targetElement) {
-                targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        });
-    });
-});
-</script>
-""", unsafe_allow_html=True)
-
-# Navigate to section if query param is set
-if st.query_params.get("nav_to"):
-    target_id = st.query_params.get("nav_to")
-    # Use JavaScript with polling to wait for element and scroll to it correctly
-    st.markdown(f"""
-    <script>
-        function findScrollContainerAndScroll(elem) {{
-            if (!elem) return false;
-            
-            // Find scrollable container and calculate correct position
-            let scrollContainer = null;
-            let parent = elem;
-            let topOffset = 0;
-            
-            while (parent) {{
-                const styles = window.getComputedStyle(parent);
-                const isScrollable = parent.scrollHeight > parent.clientHeight;
-                
-                // Accumulate offsets from all parents
-                if (parent !== elem && parent !== window) {{
-                    topOffset += parent.offsetTop || 0;
-                }}
-                
-                // Find first scrollable container
-                if (isScrollable && !scrollContainer) {{
-                    scrollContainer = parent;
-                }}
-                
-                parent = parent.parentElement;
-            }}
-            
-            if (scrollContainer) {{
-                // Calculate scroll position with 100px padding from top
-                const targetScroll = Math.max(0, topOffset - 100);
-                console.log('Scrolling to:', targetScroll, 'Current scroll:', scrollContainer.scrollTop);
-                scrollContainer.scrollTop = targetScroll;
-                return true;
-            }}
-            
-            return false;
-        }}
-        
-        function scrollToElement() {{
-            const elem = document.getElementById('{target_id}');
-            if (elem && findScrollContainerAndScroll(elem)) {{
-                console.log('Successfully scrolled to {target_id}');
-                return true;
-            }}
-            return false;
-        }}
-        
-        // Poll for the element with increasing intervals
-        let attempts = 0;
-        const maxAttempts = 50;
-        const pollIntervals = [100, 200, 300, 500, 500, 500, 1000, 1000];
-        
-        function pollForElement(attemptNum) {{
-            if (scrollToElement()) {{
-                console.log('Successfully scrolled after ' + attemptNum + ' attempts');
-                // Clear the query param after scrolling completes
-                setTimeout(() => {{
-                    const url = new URL(window.location);
-                    url.searchParams.delete('nav_to');
-                    window.history.replaceState({{}}, '', url);
-                    console.log('Cleared nav_to param');
-                }}, 500);
-                return;
-            }}
-            
-            if (attemptNum < maxAttempts) {{
-                const interval = pollIntervals[Math.min(attemptNum, pollIntervals.length - 1)];
-                setTimeout(() => pollForElement(attemptNum + 1), interval);
-                if (attemptNum % 10 === 0) {{
-                    console.log('Polling attempt ' + attemptNum + ' for {target_id}');
-                }}
-            }} else {{
-                console.log('Failed to find element {target_id} after ' + maxAttempts + ' attempts');
-            }}
-        }}
-        
-        // Start polling immediately
-        pollForElement(0);
-    </script>
     """, unsafe_allow_html=True)
 
-# Handle navigation scrolling based on query params
-# (Removed - using direct onclick handlers instead for better reliability)
+    sidebar_groups = (
+        ("Room tools", (
+            ("modal", "📊", "Modal Analysis", "room-tool-tabs", "modal"),
+            ("rt60", "⏱️", "RT60 Calculator", "room-tool-tabs", "rt60"),
+            ("sbir", "📡", "SBIR Analysis", "room-tool-tabs", "sbir"),
+            ("advance", "🏗️", "Advance Tool", "room-tool-tabs", "advance"),
+        )),
+        ("Explore ADA", (
+            ("purpose", "i", "How ADA works", "ada-purpose-section", None),
+            ("ai", "🤖", "Acoustics AI", "ada-ai-section", None),
+            ("lab", "🔬", "Digital Lab", "ada-lab-section", None),
+            ("gallery", "🖼️", "Gallery", "ada-gallery-section", None),
+            ("resources", "📚", "Resources", "ada-resources-section", None),
+        )),
+    )
+    for group_label, group_items in sidebar_groups:
+        st.markdown(f"<div class='ada-nav-group'>{group_label}</div>", unsafe_allow_html=True)
+        for item_id, icon, label, target_id, tool_id in group_items:
+            active_class = " is-active" if item_id == active_tool else ""
+            current_page = " aria-current='page'" if item_id == active_tool else ""
+            tool_attribute = f" data-ada-tool='{tool_id}'" if tool_id else ""
+            st.markdown(
+                f"<a class='ada-nav-link{active_class}' href='#{target_id}' "
+                f"data-ada-nav='{item_id}' data-ada-target='{target_id}'{tool_attribute}{current_page}>"
+                f"<span class='ada-nav-icon' aria-hidden='true'>{icon}</span>"
+                f"<span>{label}</span></a>",
+                unsafe_allow_html=True,
+            )
+
+# --- MAIN CONTENT AREA - HEADER & ROOM INPUTS ---
+st.markdown("""
+<header class='ada-app-header'>
+    <div class='ada-app-brand'>
+        <div class='ada-app-name'>Acoustic Design Assistant</div>
+        <div class='ada-app-description'>Room acoustics, modal behavior, and reverberation analysis.</div>
+    </div>
+    <div class='ada-header-actions'>
+        <a class='ada-purpose-link' href='#ada-purpose-section' data-ada-target='ada-purpose-section'>Purpose</a>
+        <a class='ada-ai-link' href='#ada-ai-section' data-ada-target='ada-ai-section' aria-label='Use Acoustics AI' title='Use Acoustics AI'>
+            <span aria-hidden='true'>🤖</span><span>Use AI</span>
+        </a>
+    </div>
+</header>
+""", unsafe_allow_html=True)
 
 # ============================================================================
 # ONBOARDING & INTRODUCTION SECTION
@@ -975,43 +1298,30 @@ if os.path.exists(_hero_img_path):
         _hero_b64 = base64.b64encode(_f.read()).decode()
 
 st.markdown(f"""
-<div style='
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: calc(100vh - 110px);
-    background-image: url("data:image/jpeg;base64,{_hero_b64}");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    border-radius: 12px;
-    margin-bottom: 1rem;
-    position: relative;
-'>
-    <div style='
-        position: absolute; inset: 0;
-        background: rgba(10, 15, 30, 0.55);
-        border-radius: 12px;
-    '></div>
-    <h1 style='
-        position: relative;
-        font-size: 3.5em;
-        font-weight: 700;
-        color: #f8fafc;
-        letter-spacing: -0.01em;
-        text-shadow: 0 2px 16px rgba(0,0,0,0.7);
-        margin: 0;
-        padding: 0 2rem;
-    '>
-        Get To Know Your Room Better With ADA
-    </h1>
-</div>
+<section class='ada-hero' style='background-image: url("data:image/jpeg;base64,{_hero_b64}");' aria-labelledby='ada-hero-title'>
+    <div class='ada-soundstage' aria-hidden='true'>
+        <span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span>
+    </div>
+    <div class='ada-hero-content'>
+        <p class='ada-hero-kicker'>Room acoustics, made tangible</p>
+        <h1 class='ada-hero-title' id='ada-hero-title'>Get To Know <span>Your Room</span> Better With ADA</h1>
+        <p class='ada-hero-copy'>Turn your dimensions into a clear acoustic picture, then explore the choices that make a room feel focused, balanced, and alive.</p>
+    </div>
+</section>
 """, unsafe_allow_html=True)
 
-# Keep a breathable layout without making the section feel disconnected
-# st.title() creates a big heading at the top of the page
-st.title("Room Geometry")  # Title of this section
-st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+st.markdown("""
+<div id='room-tools' class='ada-section-anchor'>
+    <div class='ada-room-heading'>
+        <div>
+            <p class='ada-section-kicker'>Your room model</p>
+            <h2>Room geometry</h2>
+            <p>Set the dimensions once. ADA carries them through the room tools below.</p>
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 # Create 5 columns with different widths to organize the layout nicely
 # [2, 2, 2, 1, 1] means: first 3 columns are equal width, last 2 are half that width
@@ -1069,16 +1379,13 @@ st.markdown("---")
 # --- CREATE TABS ---
 # Tabs are like pages within a page - clicking each tab shows different content
 # st.tabs() creates the tab buttons at the top
-tab_modes, tab_rt60, tab_sbir, tab_ai, tab_advance_tool, tab_digital_lab, tab_gallery, tab_resources = st.tabs([
+st.markdown("<div id='room-tool-tabs' class='ada-tab-anchor' aria-hidden='true'></div>", unsafe_allow_html=True)
+tab_modes, tab_rt60, tab_sbir, tab_advance_tool = st.tabs([
     "📊 Modal Analysis",  # Tab 1: Analyze room modes
     "⏱️ RT60 Calculator",  # Tab 2: Calculate how long sound lasts in the room
     "📡 SBIR Analysis",  # Tab 3: Analyze speaker-wall interference
-    "🤖 Acoustics AI",  # Tab 4: AI chat assistant
     "Advance Tool",
-    "Digital Lab",
-    "Gallery",
-    "📚 Resources",  # Acoustic learning resources
-])
+], default=TOOL_TABS[active_tool])
 
 # ============================================================================
 # TAB 1: MODAL ANALYSIS
@@ -1520,7 +1827,7 @@ with tab_sbir:
 # TAB 4: ACOUSTICS AI CHAT
 # Public Acoustic Atlas chat with local validation and multi-turn context
 # ============================================================================
-with tab_ai:
+def render_acoustics_ai_section():
     render_acoustic_ai_chat(
         room_context=(
             f"Length {L:.1f} m, width {W:.1f} m, height {H:.1f} m, "
@@ -1532,21 +1839,14 @@ with tab_ai:
 # TAB 5: ACOUSTIC RESOURCES
 # Learning hub with tutorials, guides, and reference materials
 # ============================================================================
-with tab_resources:
-    st.markdown("""
-    <div style='text-align: center; margin-bottom: 2rem;'>
-        <h2 style='font-size: 2em; font-weight: 700; color: #e2e8f0; margin-bottom: 0.5rem;'>📚 Acoustic Resources</h2>
-        <p style='color: #cbd5e1; font-size: 1.05em; margin: 0;'>Learn acoustic principles, standards, and best practices</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
+def render_resources_section():
     # Create 3 resource categories
     res_col1, res_col2, res_col3 = st.columns(3, gap="medium")
     
     with res_col1:
         st.markdown("""
-        <div style='background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05)); 
-                    border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 12px; padding: 1.5rem; height: 100%;'>
+        <div class='ada-resource-card' style='background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+                border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 8px; padding: 1.25rem; height: 100%;'>
             <div style='font-size: 2.5em; margin-bottom: 1rem;'>📖</div>
             <h3 style='font-size: 1.2em; font-weight: 600; margin-bottom: 0.75rem; color: #e2e8f0;'>Fundamentals</h3>
             <p style='color: #cbd5e1; font-size: 0.95em; margin-bottom: 1rem; line-height: 1.5;'>
@@ -1563,8 +1863,8 @@ with tab_resources:
     
     with res_col2:
         st.markdown("""
-        <div style='background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(168, 85, 247, 0.05)); 
-                    border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 12px; padding: 1.5rem; height: 100%;'>
+        <div class='ada-resource-card' style='background: linear-gradient(135deg, rgba(20, 184, 166, 0.1), rgba(20, 184, 166, 0.05));
+                border: 1px solid rgba(20, 184, 166, 0.24); border-radius: 8px; padding: 1.25rem; height: 100%;'>
             <div style='font-size: 2.5em; margin-bottom: 1rem;'>🛠️</div>
             <h3 style='font-size: 1.2em; font-weight: 600; margin-bottom: 0.75rem; color: #e2e8f0;'>Design & Treatment</h3>
             <p style='color: #cbd5e1; font-size: 0.95em; margin-bottom: 1rem; line-height: 1.5;'>
@@ -1581,8 +1881,8 @@ with tab_resources:
     
     with res_col3:
         st.markdown("""
-        <div style='background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05)); 
-                    border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; padding: 1.5rem; height: 100%;'>
+        <div class='ada-resource-card' style='background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+                border: 1px solid rgba(245, 158, 11, 0.24); border-radius: 8px; padding: 1.25rem; height: 100%;'>
             <div style='font-size: 2.5em; margin-bottom: 1rem;'>⚙️</div>
             <h3 style='font-size: 1.2em; font-weight: 600; margin-bottom: 0.75rem; color: #e2e8f0;'>Standards & Reference</h3>
             <p style='color: #cbd5e1; font-size: 0.95em; margin-bottom: 1rem; line-height: 1.5;'>
@@ -1724,11 +2024,299 @@ with tab_advance_tool:
 # TABS 6-8: DIGITAL LAB, GALLERY, RESOURCES
 # ============================================================================
 
-with tab_digital_lab:
+def render_digital_lab_section():
     render_digital_lab()
     st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
     render_experiment_simulator()
 
-with tab_gallery:
+def render_gallery_section():
     st.markdown("### Audio Gallery")
     render_audio_carousel_bar("All audio guides", "gallery")
+
+
+st.markdown("""
+<section id='ada-purpose-section' class='ada-purpose-band ada-section-anchor' aria-labelledby='about-ada-title'>
+    <div class='ada-section-heading'>
+        <div>
+            <p class='ada-section-kicker'>A focused starting point</p>
+            <h2 id='about-ada-title'>One room. A clearer next step.</h2>
+            <p>ADA turns a few physical dimensions into practical acoustic signals, so each decision has a visible reason behind it.</p>
+        </div>
+    </div>
+    <div class='ada-purpose-grid'>
+        <article class='ada-purpose-step'>
+            <div class='ada-purpose-number'>01 / MODEL</div>
+            <h3>Describe the space</h3>
+            <p>Set length, width, and height to establish the room every tool is reading.</p>
+        </article>
+        <article class='ada-purpose-step'>
+            <div class='ada-purpose-number'>02 / REVEAL</div>
+            <h3>See what matters</h3>
+            <p>Find modal pressure, reverberation, and boundary interference before they become guesswork.</p>
+        </article>
+        <article class='ada-purpose-step'>
+            <div class='ada-purpose-number'>03 / EXPLORE</div>
+            <h3>Choose a direction</h3>
+            <p>Use the AI, experiments, listening guides, and references when you are ready to go deeper.</p>
+        </article>
+    </div>
+</section>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<section id='ada-ai-section' class='ada-explore-section ada-section-anchor' aria-labelledby='acoustics-ai-title'>
+    <div class='ada-section-heading'>
+        <div>
+            <p class='ada-section-kicker'>Room-aware guidance</p>
+            <h2 id='acoustics-ai-title'>Acoustics AI</h2>
+            <p>Ask about the current room and get practical guidance grounded in the dimensions above.</p>
+        </div>
+    </div>
+</section>
+""", unsafe_allow_html=True)
+render_acoustics_ai_section()
+
+st.markdown("""
+<section id='ada-lab-section' class='ada-explore-section ada-section-anchor' aria-labelledby='digital-lab-title'>
+    <div class='ada-section-heading'>
+        <div>
+            <p class='ada-section-kicker'>Test an idea</p>
+            <h2 id='digital-lab-title'>Digital Lab</h2>
+            <p>Experiment with acoustic behavior and compare what changes when the room changes.</p>
+        </div>
+    </div>
+</section>
+""", unsafe_allow_html=True)
+render_digital_lab_section()
+
+st.markdown("""
+<section id='ada-gallery-section' class='ada-explore-section ada-section-anchor' aria-labelledby='audio-gallery-title'>
+    <div class='ada-section-heading'>
+        <div>
+            <p class='ada-section-kicker'>Listen with intent</p>
+            <h2 id='audio-gallery-title'>Audio Gallery</h2>
+            <p>Short listening references make the acoustic concepts easier to recognize in a real room.</p>
+        </div>
+    </div>
+</section>
+""", unsafe_allow_html=True)
+render_gallery_section()
+
+st.markdown("""
+<section id='ada-resources-section' class='ada-explore-section ada-section-anchor' aria-labelledby='acoustic-resources-title'>
+    <div class='ada-section-heading'>
+        <div>
+            <p class='ada-section-kicker'>Keep learning</p>
+            <h2 id='acoustic-resources-title'>Acoustic Resources</h2>
+            <p>Useful concepts, treatment references, and standards for the next stage of your room.</p>
+        </div>
+    </div>
+</section>
+""", unsafe_allow_html=True)
+render_resources_section()
+
+components.html(
+    """
+    <script>
+        (() => {
+            const hostWindow = window.parent;
+            const hostDocument = hostWindow.document;
+            const controllerKey = "__adaNavigationController";
+            const previousController = hostWindow[controllerKey];
+
+            if (previousController?.destroy) previousController.destroy();
+
+            const tabLabels = {
+                modal: "📊 Modal Analysis",
+                rt60: "⏱️ RT60 Calculator",
+                sbir: "📡 SBIR Analysis",
+                advance: "Advance Tool",
+            };
+            const jumpTargets = {
+                room: "room-tool-tabs",
+                purpose: "ada-purpose-section",
+                ai: "ada-ai-section",
+                lab: "ada-lab-section",
+                gallery: "ada-gallery-section",
+                resources: "ada-resources-section",
+            };
+            const sectionNav = [
+                ["ada-purpose-section", "purpose"],
+                ["ada-ai-section", "ai"],
+                ["ada-lab-section", "lab"],
+                ["ada-gallery-section", "gallery"],
+                ["ada-resources-section", "resources"],
+            ];
+
+            let scrollFrame = 0;
+            let setupTimer = 0;
+            let initialScrollTimer = 0;
+            let navigationScrollTimer = 0;
+            let mainScrollContainer = null;
+
+            const findScrollContainer = () => hostDocument.querySelector(
+                '[data-testid="stAppScrollToBottomContainer"], [data-testid="stMain"]'
+            );
+            const navLinks = () => Array.from(hostDocument.querySelectorAll("[data-ada-nav]"));
+            const tabFor = (toolId) => Array.from(hostDocument.querySelectorAll('[role="tab"]'))
+                .find((tab) => tab.textContent.trim() === tabLabels[toolId]);
+            const activeTool = () => Object.keys(tabLabels).find((toolId) => (
+                tabFor(toolId)?.getAttribute("aria-selected") === "true"
+            ));
+
+            const setActiveNav = (navId) => {
+                navLinks().forEach((link) => {
+                    const isActive = link.dataset.adaNav === navId;
+                    link.classList.toggle("is-active", isActive);
+                    if (isActive) link.setAttribute("aria-current", "page");
+                    else link.removeAttribute("aria-current");
+                });
+            };
+
+            const scrollToTarget = (targetId, behavior = "smooth") => {
+                const target = hostDocument.getElementById(targetId);
+                const scrollContainer = findScrollContainer();
+                if (!target || !scrollContainer) return;
+
+                const targetTop = target.getBoundingClientRect().top
+                    - scrollContainer.getBoundingClientRect().top
+                    + scrollContainer.scrollTop;
+                scrollContainer.scrollTo({ top: Math.max(0, targetTop - 16), behavior });
+            };
+
+            const stabilizeNavigationScroll = (targetId, behavior = "smooth") => {
+                scrollToTarget(targetId, behavior);
+                hostWindow.clearInterval(navigationScrollTimer);
+                let attempts = 0;
+                navigationScrollTimer = hostWindow.setInterval(() => {
+                    attempts += 1;
+                    if (attempts >= 6) scrollToTarget(targetId, "auto");
+                    if (attempts < 18) return;
+                    hostWindow.clearInterval(navigationScrollTimer);
+                }, 120);
+            };
+
+            const updateHistory = (targetId, toolId, mode = "push") => {
+                const url = new URL(hostWindow.location.href);
+                if (toolId) url.searchParams.set("tool", toolId);
+                url.searchParams.delete("jump");
+                url.hash = targetId;
+                hostWindow.history[`${mode}State`]({}, "", url);
+            };
+
+            const syncFromScroll = () => {
+                const scrollContainer = findScrollContainer();
+                if (!scrollContainer) return;
+
+                const marker = scrollContainer.getBoundingClientRect().top + 120;
+                let navId = activeTool() || null;
+                for (const [targetId, targetNavId] of sectionNav) {
+                    const section = hostDocument.getElementById(targetId);
+                    if (section && section.getBoundingClientRect().top <= marker) navId = targetNavId;
+                }
+                setActiveNav(navId);
+            };
+
+            const scheduleSync = () => {
+                if (scrollFrame) return;
+                scrollFrame = hostWindow.requestAnimationFrame(() => {
+                    scrollFrame = 0;
+                    syncFromScroll();
+                });
+            };
+
+            const selectTool = (toolId) => {
+                const tab = tabFor(toolId);
+                if (tab && tab.getAttribute("aria-selected") !== "true") tab.click();
+                setActiveNav(toolId);
+            };
+
+            const navigateTo = (targetId, toolId, behavior = "smooth", historyMode = "push") => {
+                if (toolId) selectTool(toolId);
+                hostWindow.setTimeout(() => {
+                    stabilizeNavigationScroll(targetId, behavior);
+                    scheduleSync();
+                }, toolId ? 50 : 0);
+                if (historyMode) updateHistory(targetId, toolId, historyMode);
+            };
+
+            const onNavigationClick = (event) => {
+                if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey) return;
+                const link = event.target?.closest?.("[data-ada-target]");
+                if (!link?.dataset.adaTarget) return;
+
+                event.preventDefault();
+                const navId = link.dataset.adaNav || null;
+                if (navId) setActiveNav(navId);
+                navigateTo(link.dataset.adaTarget, link.dataset.adaTool || null);
+            };
+
+            const onTabClick = (event) => {
+                if (!event.target?.closest?.('[role="tab"]')) return;
+                hostWindow.setTimeout(() => {
+                    const toolId = activeTool();
+                    if (!toolId) return;
+                    setActiveNav(toolId);
+                    const url = new URL(hostWindow.location.href);
+                    url.searchParams.set("tool", toolId);
+                    url.searchParams.delete("jump");
+                    hostWindow.history.replaceState({}, "", url);
+                }, 0);
+            };
+
+            const targetFromLocation = () => {
+                const url = new URL(hostWindow.location.href);
+                const fromJump = jumpTargets[url.searchParams.get("jump")];
+                const fromHash = decodeURIComponent(url.hash.replace(/^#/, ""));
+                return fromJump || fromHash || null;
+            };
+
+            const restoreLocation = () => {
+                const url = new URL(hostWindow.location.href);
+                const toolId = url.searchParams.get("tool");
+                const targetId = targetFromLocation();
+                if (toolId && tabLabels[toolId]) selectTool(toolId);
+                if (!targetId || !hostDocument.getElementById(targetId)) return;
+
+                let attempts = 0;
+                hostWindow.clearInterval(initialScrollTimer);
+                initialScrollTimer = hostWindow.setInterval(() => {
+                    scrollToTarget(targetId, "auto");
+                    attempts += 1;
+                    if (attempts >= 18) hostWindow.clearInterval(initialScrollTimer);
+                }, 150);
+            };
+
+            const setup = (attempt = 0) => {
+                mainScrollContainer = findScrollContainer();
+                if (!mainScrollContainer || !navLinks().length || !hostDocument.getElementById("room-tool-tabs")) {
+                    if (attempt < 80) setupTimer = hostWindow.setTimeout(() => setup(attempt + 1), 50);
+                    return;
+                }
+
+                hostDocument.addEventListener("click", onNavigationClick, true);
+                hostDocument.addEventListener("click", onTabClick, true);
+                mainScrollContainer.addEventListener("scroll", scheduleSync, { passive: true });
+                hostWindow.addEventListener("popstate", restoreLocation);
+                syncFromScroll();
+                restoreLocation();
+            };
+
+            hostWindow[controllerKey] = {
+                destroy: () => {
+                    hostWindow.clearTimeout(setupTimer);
+                    hostWindow.clearInterval(initialScrollTimer);
+                    hostWindow.clearInterval(navigationScrollTimer);
+                    hostWindow.cancelAnimationFrame(scrollFrame);
+                    hostDocument.removeEventListener("click", onNavigationClick, true);
+                    hostDocument.removeEventListener("click", onTabClick, true);
+                    mainScrollContainer?.removeEventListener("scroll", scheduleSync);
+                    hostWindow.removeEventListener("popstate", restoreLocation);
+                },
+            };
+            setup();
+        })();
+    </script>
+    """,
+    height=1,
+)

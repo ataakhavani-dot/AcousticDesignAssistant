@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from queue import Empty, Queue
+from threading import Thread
+from time import monotonic
+from typing import Iterable
+
 import streamlit as st
 
 from acoustic_ai import (
@@ -18,6 +23,12 @@ from acoustic_ai import (
 MESSAGES_KEY = "acoustic_atlas_messages"
 SUGGESTIONS_KEY = "acoustic_atlas_suggestions"
 ERROR_KEY = "acoustic_atlas_error"
+THINKING_DELAY_SECONDS = 0.5
+RENDER_INTERVAL_SECONDS = 0.08
+POLL_INTERVAL_SECONDS = 0.03
+STREAM_CHARACTERS_PER_SECOND = 420
+MINIMUM_RENDER_CHARACTERS = 18
+MAXIMUM_RENDER_CHARACTERS = 64
 
 
 def render_acoustic_ai_chat(room_context: str | None = None) -> None:
@@ -113,12 +124,39 @@ def _inject_styles() -> None:
                 margin-bottom: 0.8rem;
                 padding: 0.25rem 0.75rem;
             }
-            div[data-testid="stChatInput"] {
+            .acoustic-atlas-thinking {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.55rem;
+                min-height: 2.2rem;
+                color: #cbd5e1;
+                font-size: 0.88rem;
+            }
+            .acoustic-atlas-thinking-dots {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.22rem;
+            }
+            .acoustic-atlas-thinking-dots span {
+                width: 0.36rem;
+                height: 0.36rem;
+                border-radius: 50%;
+                background: #7dd3fc;
+                animation: acoustic-atlas-pulse 1.05s ease-in-out infinite;
+            }
+            .acoustic-atlas-thinking-dots span:nth-child(2) { animation-delay: 140ms; }
+            .acoustic-atlas-thinking-dots span:nth-child(3) { animation-delay: 280ms; }
+            @keyframes acoustic-atlas-pulse {
+                0%, 70%, 100% { opacity: 0.32; transform: translateY(0); }
+                35% { opacity: 1; transform: translateY(-0.16rem); }
+            }
+            form[data-testid="stForm"] {
                 background: #111827;
                 border: 1px solid #475569;
                 border-radius: 8px;
+                padding: 0.75rem;
             }
-            div[data-testid="stChatInput"] textarea {
+            form[data-testid="stForm"] textarea {
                 color: #f8fafc;
             }
         </style>
@@ -174,12 +212,18 @@ def _render_composer(conversation_slot, system_prompt: str) -> None:
     else:
         st.caption("Live answers stream as they are generated. Use at least four words before sending.")
 
-    question = st.chat_input(
-        "Ask Acoustic Atlas about sound in your space",
-        key="acoustic_atlas_input",
-        max_chars=MAXIMUM_CHARACTERS - len(system_prompt),
-    )
-    if question:
+    with st.form("acoustic_atlas_composer", clear_on_submit=True, border=False):
+        question = st.text_area(
+            "Ask Acoustic Atlas about sound in your space",
+            placeholder="Ask Acoustic Atlas about sound in your space",
+            key="acoustic_atlas_input",
+            max_chars=MAXIMUM_CHARACTERS - len(system_prompt),
+            height=96,
+            label_visibility="collapsed",
+        )
+        submitted = st.form_submit_button("Send", type="primary")
+
+    if submitted and question:
         _submit_question(question, conversation_slot, system_prompt)
         st.rerun()
 
@@ -200,10 +244,7 @@ def _submit_question(question: str, conversation_slot, system_prompt: str) -> No
             with st.chat_message("user"):
                 st.markdown(question.strip())
             with st.chat_message("assistant"):
-                progress_placeholder = st.empty()
-                progress_placeholder.caption("Acoustic Atlas is preparing a response...")
-                reply = st.write_stream(stream_acoustic_ai(conversation))
-                progress_placeholder.empty()
+                reply = _render_streamed_reply(stream_acoustic_ai(conversation))
     except AcousticAIError as error:
         st.session_state[ERROR_KEY] = str(error)
         return
@@ -218,6 +259,108 @@ def _submit_question(question: str, conversation_slot, system_prompt: str) -> No
             {"role": "assistant", "content": reply.strip()},
         ]
     )
+
+
+def _render_streamed_reply(chunks: Iterable[str]) -> str:
+    """Buffer network chunks and reveal them at a steady, readable cadence."""
+    stream_events: Queue[tuple[str, object]] = Queue()
+    started_at = monotonic()
+
+    def read_stream() -> None:
+        try:
+            for chunk in chunks:
+                stream_events.put(("chunk", chunk))
+        except Exception as error:
+            stream_events.put(("error", error))
+        finally:
+            stream_events.put(("done", None))
+
+    Thread(target=read_stream, daemon=True).start()
+
+    response_placeholder = st.empty()
+    thinking_placeholder = st.empty()
+    response_text = ""
+    pending_text = ""
+    last_rendered_at = started_at
+    first_content_revealed = False
+    stream_finished = False
+    thinking_visible = False
+
+    while not (stream_finished and not pending_text):
+        try:
+            event_kind, payload = stream_events.get(timeout=POLL_INTERVAL_SECONDS)
+        except Empty:
+            pending_events = []
+        else:
+            pending_events = [(event_kind, payload)]
+            while True:
+                try:
+                    pending_events.append(stream_events.get_nowait())
+                except Empty:
+                    break
+
+        for event_kind, payload in pending_events:
+            if event_kind == "chunk" and isinstance(payload, str):
+                pending_text += payload
+            elif event_kind == "error" and isinstance(payload, Exception):
+                raise payload
+            elif event_kind == "done":
+                stream_finished = True
+
+        now = monotonic()
+        if (
+            not first_content_revealed
+            and not thinking_visible
+            and now - started_at >= THINKING_DELAY_SECONDS
+        ):
+            thinking_placeholder.markdown(
+                """
+                <div class='acoustic-atlas-thinking' role='status' aria-live='polite'>
+                    <span>Thinking</span>
+                    <span class='acoustic-atlas-thinking-dots' aria-hidden='true'><span></span><span></span><span></span></span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            thinking_visible = True
+
+        if pending_text and (
+            stream_finished or now - last_rendered_at >= RENDER_INTERVAL_SECONDS
+        ):
+            elapsed = now - last_rendered_at
+            character_budget = min(
+                MAXIMUM_RENDER_CHARACTERS,
+                max(MINIMUM_RENDER_CHARACTERS, int(elapsed * STREAM_CHARACTERS_PER_SECOND)),
+            )
+            text_to_reveal, pending_text = _take_stream_segment(pending_text, character_budget)
+            response_text += text_to_reveal
+            response_placeholder.markdown(f"{response_text}▍")
+            thinking_placeholder.empty()
+            first_content_revealed = True
+            last_rendered_at = now
+
+    if not response_text:
+        thinking_placeholder.empty()
+        return ""
+
+    response_placeholder.markdown(response_text)
+    thinking_placeholder.empty()
+    return response_text
+
+
+def _take_stream_segment(buffer: str, character_budget: int) -> tuple[str, str]:
+    if len(buffer) <= character_budget:
+        return buffer, ""
+
+    search_limit = min(len(buffer), character_budget + 12)
+    break_index = max(
+        buffer.rfind(separator, 0, search_limit)
+        for separator in (" ", "\n", ".", ",", ";", ":")
+    )
+    if break_index >= max(1, character_budget // 2):
+        return buffer[:break_index + 1], buffer[break_index + 1:]
+
+    return buffer[:character_budget], buffer[character_budget:]
 
 
 def _reset_conversation() -> None:
