@@ -9,6 +9,8 @@ import streamlit as st           # Creates interactive web apps in Python (no HT
 import streamlit.components.v1 as components
 import numpy as np               # For fast math calculations with lists of numbers
 import pandas as pd              # For organizing data into tables (like Excel)
+import base64
+import os
 import plotly.graph_objects as go  # For creating interactive charts and graphs
 import plotly.express as px      # A simpler way to make charts with plotly
 from acoustic_ai_chat import render_acoustic_ai_chat
@@ -26,7 +28,7 @@ st.set_page_config(
     page_title="ADA | Acoustic Design Assistant",  # Text shown in browser tab
     page_icon="🌊",  # Small icon next to the title in browser tab
     layout="wide",  # Use full width of screen (instead of narrow center column)
-    initial_sidebar_state="collapsed"  # Hide the sidebar by default to save space
+    initial_sidebar_state="expanded"  # Show sidebar by default
 )
 
 # Initialize session state for navigation
@@ -199,6 +201,34 @@ st.markdown("""
     div[data-testid="stExpander"] > div {
         background-color: #111827 !important;
         color: #e2e8f0 !important;
+    }
+
+    /* ===== SIDEBAR THEMING ===== */
+    [data-testid="stSidebar"] {
+        background-color: #0d1526 !important;
+        border-right: 1px solid rgba(96, 165, 250, 0.15) !important;
+    }
+    [data-testid="stSidebar"] * {
+        color: #e2e8f0 !important;
+    }
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3 {
+        color: #f8fafc !important;
+    }
+    [data-testid="stSidebar"] hr {
+        border-color: rgba(96, 165, 250, 0.2) !important;
+    }
+    /* Info box inside sidebar */
+    [data-testid="stSidebar"] [data-testid="stAlert"] {
+        background-color: rgba(96, 165, 250, 0.08) !important;
+        border: 1px solid rgba(96, 165, 250, 0.25) !important;
+        color: #94a3b8 !important;
+    }
+    /* Sidebar nav item hover handled inline; remove Streamlit's default link blue */
+    [data-testid="stSidebar"] a {
+        color: #94a3b8 !important;
+        text-decoration: none !important;
     }
 
 </style>
@@ -758,17 +788,57 @@ def calculate_sbir_curve(distances):
 # The sidebar is an optional panel on the left side of most web apps
 # We use "with st.sidebar:" to tell Streamlit to put everything inside in the sidebar
 with st.sidebar:
-    st.markdown("## 🌊 ADA")  # Main title for the app with an emoji
-    st.caption("Acoustic Design Assistant • Prototype")  # Smaller subtitle explaining what it is
-    st.markdown("---")  # This creates a horizontal line to separate sections
-    st.markdown("**Project Phase:** Core Logic Sprints")  # Show what stage the project is in
-    st.markdown("**Hot Reloading:** Active ⚡")  # Show that code changes update instantly
-    
-    # Store global materials state if we want to add presets later
-    # This is a comment for future development
-    st.markdown("---")  # Another divider line
-    # This is an info box (💡 = light bulb) giving users helpful tips
-    st.info("💡 Adjust the room dimensions in the main panel to see real-time updates across all tabs.")
+    st.markdown(
+        "<div style='font-size:1.25rem;font-weight:700;color:#f8fafc;letter-spacing:0.01em;padding:0.5rem 0 0.1rem;'>🌊 ADA</div>"
+        "<div style='font-size:0.8rem;color:#64748b;margin-bottom:0.75rem;'>Acoustic Design Assistant</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("<hr style='border-color:rgba(96,165,250,0.2);margin:0.5rem 0 0.75rem;'>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:0.7rem;font-weight:600;color:#475569;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.5rem;padding-left:0.5rem;'>Navigation</div>", unsafe_allow_html=True)
+
+    # Each item JS-clicks the corresponding Streamlit tab button by index (0-based)
+    NAV_TABS = [
+        ("📊 Modal Analysis",  0),
+        ("⏱️ RT60 Calculator", 1),
+        ("📡 SBIR Analysis",   2),
+        ("🤖 Acoustics AI",    3),
+        ("🏗️ Advance Tool",    4),
+        ("🔬 Digital Lab",     5),
+        ("🖼️ Gallery",         6),
+        ("📚 Resources",       7),
+    ]
+
+    for label, idx in NAV_TABS:
+        st.markdown(
+            f"""<div onclick="
+                var d = (window.parent !== window) ? window.parent.document : document;
+                var tabs = d.querySelectorAll('[data-baseweb=tab-list] button[role=tab]');
+                if (!tabs.length) tabs = d.querySelectorAll('button[role=tab]');
+                if (tabs[{idx}]) tabs[{idx}].click();
+            "
+            style="
+                cursor:pointer;
+                display:flex;
+                align-items:center;
+                gap:0.6rem;
+                padding:0.55rem 0.75rem;
+                border-radius:8px;
+                color:#94a3b8;
+                font-size:0.92rem;
+                font-weight:500;
+                margin-bottom:0.2rem;
+                border:1px solid transparent;
+                transition:all 0.15s ease;
+            "
+            onmouseover="this.style.background='rgba(96,165,250,0.1)';this.style.borderColor='rgba(96,165,250,0.25)';this.style.color='#60a5fa';"
+            onmouseout="this.style.background='transparent';this.style.borderColor='transparent';this.style.color='#94a3b8';">
+                {label}
+            </div>""",
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("<hr style='border-color:rgba(96,165,250,0.2);margin:0.75rem 0 0.5rem;'>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:0.8rem;color:#475569;line-height:1.5;padding:0.25rem 0.5rem;'>💡 Adjust room dimensions to see real-time updates across all tabs.</div>", unsafe_allow_html=True)
 
 
 # --- MAIN CONTENT AREA - HEADER & ROOM INPUTS ---
@@ -898,130 +968,45 @@ if st.query_params.get("nav_to"):
 # ONBOARDING & INTRODUCTION SECTION
 # ============================================================================
 
-# Add a little spacing below the nav bar
-st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
+_hero_img_path = os.path.join(os.path.dirname(__file__), "public", "hero_bg.jpg")
+_hero_b64 = ""
+if os.path.exists(_hero_img_path):
+    with open(_hero_img_path, "rb") as _f:
+        _hero_b64 = base64.b64encode(_f.read()).decode()
 
-# Hero/Welcome section with modern styling
-st.markdown("""
-<div style='text-align: center; margin-bottom: 3rem;'>
-    <h1 style='font-size: 3.5em; font-weight: 700; margin-bottom: 0.5rem; line-height: 1.2;'>
-        Design rooms that <span style='color: #60a5fa;'>sound right.</span>
+st.markdown(f"""
+<div style='
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 110px);
+    background-image: url("data:image/jpeg;base64,{_hero_b64}");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    position: relative;
+'>
+    <div style='
+        position: absolute; inset: 0;
+        background: rgba(10, 15, 30, 0.55);
+        border-radius: 12px;
+    '></div>
+    <h1 style='
+        position: relative;
+        font-size: 3.5em;
+        font-weight: 700;
+        color: #f8fafc;
+        letter-spacing: -0.01em;
+        text-shadow: 0 2px 16px rgba(0,0,0,0.7);
+        margin: 0;
+        padding: 0 2rem;
+    '>
+        Get To Know Your Room Better With ADA
     </h1>
-    <p style='font-size: 1.1em; color: #cbd5e1; margin-bottom: 0; line-height: 1.6; max-width: 700px; margin-left: auto; margin-right: auto;'>
-        ADA bridges the gap between complex acoustic physics and accessible design. 
-        Whether you are planning a control room or studying sound behavior, ADA gives 
-        you the tools to make informed decisions.
-    </p>
-</div>
-
-<div style='text-align: center; margin-bottom: 2.5rem;'>
-    <h2 style='font-size: 1.8em; font-weight: 600; margin-bottom: 0.5rem;'>Four ways to explore acoustics</h2>
-    <p style='color: #94a3b8; font-size: 1em;'>Everything you need to understand, measure, and design sound in a space</p>
 </div>
 """, unsafe_allow_html=True)
-
-# Create 4 columns for feature cards
-feature_col1, feature_col2, feature_col3, feature_col4 = st.columns(4, gap="medium")
-
-with feature_col1:
-    st.markdown("""
-    <div style='background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(96, 165, 250, 0.05)); 
-                border: 1px solid rgba(96, 165, 250, 0.2); border-radius: 12px; padding: 1.5rem; height: 100%;'>
-        <div style='font-size: 2.5em; margin-bottom: 1rem;'>📊</div>
-        <h3 style='font-size: 1.2em; font-weight: 600; margin-bottom: 0.75rem; color: #e2e8f0;'>Calculators</h3>
-        <p style='color: #cbd5e1; font-size: 0.95em; margin-bottom: 1.5rem; line-height: 1.5;'>
-            Adjust room dimensions in real-time to analyze low-frequency modes, predict RT60 decay times, and map speaker boundary interference.
-        </p>
-        <a href='#room-geometry' style='color: #60a5fa; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 0.5rem;'>
-            Explore calculators <span style='font-size: 1.2em;'>→</span>
-        </a>
-    </div>
-    """, unsafe_allow_html=True)
-
-with feature_col2:
-    st.markdown("""
-    <div style='background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(96, 165, 250, 0.05)); 
-                border: 1px solid rgba(96, 165, 250, 0.2); border-radius: 12px; padding: 1.5rem; height: 100%;'>
-        <div style='font-size: 2.5em; margin-bottom: 1rem;'>🔍</div>
-        <h3 style='font-size: 1.2em; font-weight: 600; margin-bottom: 0.75rem; color: #e2e8f0;'>Analysis Tools</h3>
-        <p style='color: #cbd5e1; font-size: 0.95em; margin-bottom: 1.5rem; line-height: 1.5;'>
-            Dive deep into acoustic behavior. Visualize modal frequencies, SBIR effects, and room stability with interactive charts.
-        </p>
-        <a href='#room-geometry' style='color: #60a5fa; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 0.5rem;'>
-            Explore analysis <span style='font-size: 1.2em;'>→</span>
-        </a>
-    </div>
-    """, unsafe_allow_html=True)
-
-with feature_col3:
-    st.markdown("""
-    <div style='background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(96, 165, 250, 0.05)); 
-                border: 1px solid rgba(96, 165, 250, 0.2); border-radius: 12px; padding: 1.5rem; height: 100%;'>
-        <div style='font-size: 2.5em; margin-bottom: 1rem;'>🎧</div>
-        <h3 style='font-size: 1.2em; font-weight: 600; margin-bottom: 0.75rem; color: #e2e8f0;'>Audio Library</h3>
-        <p style='color: #cbd5e1; font-size: 0.95em; margin-bottom: 1.5rem; line-height: 1.5;'>
-            Listen and learn. Engage with our interactive carousel to hear podcast-style explanations of core acoustic concepts.
-        </p>
-        <a href='#audio-explanation-section' style='color: #60a5fa; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 0.5rem;'>
-            Explore audio <span style='font-size: 1.2em;'>→</span>
-        </a>
-    </div>
-    """, unsafe_allow_html=True)
-
-with feature_col4:
-    st.markdown("""
-    <div style='background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(96, 165, 250, 0.05)); 
-                border: 1px solid rgba(96, 165, 250, 0.2); border-radius: 12px; padding: 1.5rem; height: 100%;'>
-        <div style='font-size: 2.5em; margin-bottom: 1rem;'>💡</div>
-        <h3 style='font-size: 1.2em; font-weight: 600; margin-bottom: 0.75rem; color: #e2e8f0;'>Info Cards</h3>
-        <p style='color: #cbd5e1; font-size: 0.95em; margin-bottom: 1.5rem; line-height: 1.5;'>
-            Access acoustic insights covering industry standards, the Bolt Area stability zone, and material absorption guidelines.
-        </p>
-        <a href='#acoustic-insights-section' style='color: #60a5fa; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 0.5rem;'>
-            Explore insights <span style='font-size: 1.2em;'>→</span>
-        </a>
-    </div>
-    """, unsafe_allow_html=True)
-
-# CTA buttons section
-st.markdown("""
-<div style='text-align: center; margin-top: 3rem; margin-bottom: 2rem;'>
-    <p style='color: #94a3b8; font-size: 0.95em;'>Ready to get started?</p>
-</div>
-""", unsafe_allow_html=True)
-
-cta_col1, cta_col2, cta_col3 = st.columns([1, 2, 1])
-with cta_col2:
-    st.markdown("""
-    <div style='display: flex; gap: 1rem; justify-content: center;'>
-        <a href='#room-geometry' style='
-            display: inline-block;
-            background: #60a5fa;
-            color: #fff;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.95em;
-            transition: background 0.3s ease;
-        '>Start designing</a>
-        <a href='https://github.com' target='_blank' style='
-            display: inline-block;
-            background: transparent;
-            color: #e2e8f0;
-            padding: 0.75rem 1.5rem;
-            border: 1px solid #475569;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 0.95em;
-            transition: border 0.3s ease;
-        '>View the documentation</a>
-    </div>
-    """, unsafe_allow_html=True)
-
-# Add spacing before the Room Geometry section starts
-st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
 
 # Keep a breathable layout without making the section feel disconnected
 # st.title() creates a big heading at the top of the page
