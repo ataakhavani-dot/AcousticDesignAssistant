@@ -1,4 +1,4 @@
-"""Interactive acoustics teaching simulations for ADA's Digital Lab."""
+"""Interactive acoustics teaching simulations for ADA's Discovery Lab."""
 
 from __future__ import annotations
 

@@ -8,11 +8,17 @@
 import streamlit as st           # Creates interactive web apps in Python (no HTML needed!)
 import streamlit.components.v1 as components
 import numpy as np               # For fast math calculations with lists of numbers
-import pandas as pd              # For organizing data into tables (like Excel)
 import base64
 import os
 import plotly.graph_objects as go  # For creating interactive charts and graphs
 import plotly.express as px      # A simpler way to make charts with plotly
+from acoustic_calculations import (
+    SPEED_OF_SOUND,
+    calculate_modes,
+    calculate_sbir_curve,
+    check_bolt_area,
+    get_room_ratios,
+)
 from acoustic_ai_chat import render_acoustic_ai_chat
 from audio_library import render_audio_carousel_bar
 from digital_lab import render_digital_lab
@@ -36,7 +42,7 @@ TOOL_TABS = {
     "modal": "📊 Modal Analysis",
     "rt60": "⏱️ RT60 Calculator",
     "sbir": "📡 SBIR Analysis",
-    "advance": "Advance Tool",
+    "advance": "Room Simulator",
 }
 active_tool = st.query_params.get("tool", "modal")
 if active_tool not in TOOL_TABS:
@@ -708,12 +714,6 @@ MATERIALS = {
 # They divide the hearing range into bands - think of it like dividing a piano keyboard into sections
 OCTAVE_BANDS = ['125', '250', '500', '1k', '2k', '4k']  # From low to high frequency
 
-# SPEED OF SOUND
-# How fast sound travels through air at room temperature
-# This is a physics constant - you use it in many acoustic calculations
-SPEED_OF_SOUND = 343.0  # meters per second at 20°C
-
-
 # ============================================================================
 # SECTION 6: REUSABLE GLASS BOX CALCULATION CARD
 # This renders the calculation as an explanatory info card with inputs and factors
@@ -1083,145 +1083,6 @@ def render_audio_carousel():
 # These functions calculate acoustic properties based on physics principles
 # ============================================================================
 
-def get_room_ratios(L, W, H):
-    """
-    Calculate room dimension ratios to check if a room has good acoustic properties.
-    
-    Explanation for beginners:
-    - Room ratios (proportions) affect how sound waves move and bounce
-    - If a room is too cube-shaped or has bad ratios, it creates acoustic problems
-    - This function sorts dimensions and calculates ratios used to check stability
-    
-    Args:
-        L: Length of room (meters)
-        W: Width of room (meters)
-        H: Height of room (meters)
-    
-    Returns:
-        Two ratios: (Width/Height, Length/Height)
-    """
-    dims = sorted([L, W, H], reverse=True)  # Sort from largest to smallest: [largest, middle, smallest]
-    return dims[1]/dims[2], dims[0]/dims[2]  # Return: middle/smallest and largest/smallest
-
-
-def check_bolt_area(x, y):
-    """
-    Check if room ratios fall within the "Bolt area" - a zone of good acoustic ratios.
-    
-    Explanation for beginners:
-    - The Bolt area is a specific zone on a graph where room ratios sound good
-    - It's named after acoustician Beranek Bolt
-    - If your room point falls inside this zone, you're in good shape acoustically
-    - If outside, your room proportions might cause acoustic problems
-    
-    Args:
-        x: Width to Height ratio (first number)
-        y: Length to Height ratio (second number)
-    
-    Returns:
-        (status_text, color_indicator) - either "Stable Zone" or "Unstable"
-    """
-    # Check if the x,y point is inside the Bolt area polygon (the stable zone)
-    # These numbers define the corners of a rectangle on the graph
-    if 1.14 < x < 1.6 and 1.12 < y < 1.54:
-        return "Stable Zone", "normal"  # Point is inside - good acoustics!
-    return "Unstable", "inverse"  # Point is outside - potential acoustic issues
-
-
-def calculate_modes(L, W, H, max_freq=300):
-    """
-    Calculate MODAL FREQUENCIES - frequencies where sound waves get "stuck" in the room.
-    
-    Explanation for beginners:
-    - Sound in a room doesn't move randomly - it creates standing patterns (like waves on a guitar string)
-    - Each length, width, and height of the room creates its own resonance frequencies
-    - At these frequencies, certain spots get VERY loud and others are quiet (problem!)
-    - This function calculates all modes from 0-300 Hz, which is where most problems happen
-    
-    How it works:
-    - The formula: f = (c/2) * (n / dimension)
-    - c = speed of sound, n = mode number (1, 2, 3...), dimension = room size
-    - Each room dimension (L, W, H) creates its own set of modes
-    - We calculate modes for each axis with different colors for easy visualization
-    
-    Args:
-        L: Length (meters)
-        W: Width (meters)  
-        H: Height (meters)
-        max_freq: Only show modes below this frequency (default 300 Hz)
-    
-    Returns:
-        DataFrame with columns: Freq (Hz), Axis (which direction), Color (for plotting)
-    """
-    modes = []  # Empty list to store all our calculated modes
-    
-    # Loop from mode 1 to mode 4 (higher modes are less important)
-    for n in range(1, 5):
-        # Calculate mode along LENGTH axis (color = red)
-        # Formula: frequency = (speed_of_sound / 2) * (mode_number / length)
-        modes.append({'Freq': (SPEED_OF_SOUND/2)*(n/L), 'Axis': 'Length', 'Color': '#ef4444'})
-        
-        # Calculate mode along WIDTH axis (color = green)
-        modes.append({'Freq': (SPEED_OF_SOUND/2)*(n/W), 'Axis': 'Width', 'Color': '#22c55e'})
-        
-        # Calculate mode along HEIGHT axis (color = blue)
-        modes.append({'Freq': (SPEED_OF_SOUND/2)*(n/H), 'Axis': 'Height', 'Color': '#3b82f6'})
-    
-    # Convert the list of modes into a nice table (DataFrame)
-    df = pd.DataFrame(modes)
-    
-    # Filter to keep only modes below max_freq and sort from lowest to highest frequency
-    return df[df['Freq'] <= max_freq].sort_values(by='Freq')
-
-
-def calculate_sbir_curve(distances):
-    """
-    Calculate SBIR (Speaker-Boundary Interference Response) curve.
-    
-    Explanation for beginners:
-    - SBIR is what happens when sound from a speaker bounces off nearby walls
-    - When direct sound and reflected sound arrive at the same time, they cancel each other out
-    - This creates a "notch" (dip) in the frequency response at specific frequencies
-    - These problem frequencies are calculated by: f = c / (4 * distance_to_wall)
-    - This function simulates this acoustic effect across a range of frequencies
-    
-    Args:
-        distances: List of distances to walls [distance_to_front, distance_to_side, distance_to_floor]
-    
-    Returns:
-        (frequencies, response) - two arrays: frequencies (Hz) and amplitude response (dB)
-    """
-    # Create a list of important frequencies to analyze (audio range)
-    freqs = np.array([40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800])
-    
-    # Create an array of response values, all starting at zero
-    # We'll subtract from this array to show the "dips" (problem areas)
-    resp = np.zeros(len(freqs))
-    
-    # For each distance to a wall, calculate the cancellation dip
-    for d in distances:
-        if d > 0:  # Only process if distance is greater than zero
-            # Calculate the frequency where cancellation happens
-            # Quarter-wavelength cancellation: f = c / (4 * distance)
-            # This is the frequency most affected by this wall distance
-            f_cancel = SPEED_OF_SOUND / (4 * d)
-            
-            # Loop through each frequency in our list
-            for i, f in enumerate(freqs):
-                # Calculate how far this frequency is from the problem frequency
-                diff = abs(f - f_cancel)
-                
-                # Create a dip at the problem frequency (and some surrounding area)
-                # 0.3 means the dip affects frequencies within 30% of the problem frequency
-                if diff < (f_cancel * 0.3):
-                    # Subtract from response: bigger dip right at f_cancel, smaller dip around it
-                    # The response shows negative dB = quieter
-                    resp[i] -= 10 * (1 - (diff/(f_cancel*0.3)))
-    
-    # Make sure response doesn't go lower than -20 dB (realistic limit)
-    return freqs, np.maximum(resp, -20)
-
-
 
 # ============================================================================
 # SECTION 8: APP LAYOUT & USER INTERFACE
@@ -1247,12 +1108,12 @@ with st.sidebar:
             ("modal", "📊", "Modal Analysis", "room-tool-tabs", "modal"),
             ("rt60", "⏱️", "RT60 Calculator", "room-tool-tabs", "rt60"),
             ("sbir", "📡", "SBIR Analysis", "room-tool-tabs", "sbir"),
-            ("advance", "🏗️", "Advance Tool", "room-tool-tabs", "advance"),
+            ("advance", "🏗️", "Room Simulator", "room-tool-tabs", "advance"),
         )),
         ("Explore ADA", (
             ("purpose", "i", "How ADA works", "ada-purpose-section", None),
             ("ai", "🤖", "Acoustics AI", "ada-ai-section", None),
-            ("lab", "🔬", "Digital Lab", "ada-lab-section", None),
+            ("lab", "🔬", "Discovery Lab", "ada-lab-section", None),
             ("gallery", "🖼️", "Gallery", "ada-gallery-section", None),
             ("resources", "📚", "Resources", "ada-resources-section", None),
         )),
@@ -1384,7 +1245,7 @@ tab_modes, tab_rt60, tab_sbir, tab_advance_tool = st.tabs([
     "📊 Modal Analysis",  # Tab 1: Analyze room modes
     "⏱️ RT60 Calculator",  # Tab 2: Calculate how long sound lasts in the room
     "📡 SBIR Analysis",  # Tab 3: Analyze speaker-wall interference
-    "Advance Tool",
+    "Room Simulator",
 ], default=TOOL_TABS[active_tool])
 
 # ============================================================================
@@ -2006,7 +1867,7 @@ def render_resources_section():
         """)
 
 # ============================================================================
-# TAB 5: ADVANCE TOOL — INTERACTIVE 2-D / 3-D ROOM VIEW
+# TAB 5: ROOM SIMULATOR — INTERACTIVE 2-D / 3-D ROOM VIEW
 # ============================================================================
 with tab_advance_tool:
     st.markdown("### Interactive Room View")
@@ -2021,7 +1882,7 @@ with tab_advance_tool:
     render_room_simulator(L, W, H)
 
 # ============================================================================
-# TABS 6-8: DIGITAL LAB, GALLERY, RESOURCES
+# TABS 6-8: DISCOVERY LAB, GALLERY, RESOURCES
 # ============================================================================
 
 def render_digital_lab_section():
@@ -2081,7 +1942,7 @@ st.markdown("""
     <div class='ada-section-heading'>
         <div>
             <p class='ada-section-kicker'>Test an idea</p>
-            <h2 id='digital-lab-title'>Digital Lab</h2>
+            <h2 id='digital-lab-title'>Discovery Lab</h2>
             <p>Experiment with acoustic behavior and compare what changes when the room changes.</p>
         </div>
     </div>
@@ -2130,7 +1991,7 @@ components.html(
                 modal: "📊 Modal Analysis",
                 rt60: "⏱️ RT60 Calculator",
                 sbir: "📡 SBIR Analysis",
-                advance: "Advance Tool",
+                advance: "Room Simulator",
             };
             const jumpTargets = {
                 room: "room-tool-tabs",

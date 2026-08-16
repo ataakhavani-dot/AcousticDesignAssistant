@@ -18,7 +18,7 @@ COPY --from=build /usr/local/bin /usr/local/bin
 
 # Copy application source. Every module web_application.py imports must be
 # listed here, plus static/ for the room simulator's JS and CSS assets.
-COPY acoustic_ai.py acoustic_ai_chat.py audio_library.py digital_lab.py \
+COPY acoustic_ai.py acoustic_ai_chat.py acoustic_calculations.py audio_library.py digital_lab.py \
      experiment_simulator.py room_simulator.py web_application.py ./
 COPY static/ ./static/
 

@@ -1,4 +1,4 @@
-"""Interactive historical acoustics experiment records for ADA's Digital Lab."""
+"""Interactive historical acoustics experiment records for ADA's Discovery Lab."""
 
 from __future__ import annotations
 
@@ -434,7 +434,7 @@ def _build_digital_lab_html() -> str:
         <main class="digital-lab">
             <header class="lab-heading">
                 <div>
-                    <p class="eyebrow">DIGITAL LAB</p>
+                    <p class="eyebrow">DISCOVERY LAB</p>
                     <h1>Historical acoustics experiments</h1>
                     <p class="heading-copy">Explore the physical demonstrations that shaped modern resonance, reverberation, localization, and diffusion practice.</p>
                 </div>

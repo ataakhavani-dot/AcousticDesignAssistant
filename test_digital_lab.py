@@ -14,6 +14,7 @@ class DigitalLabTests(unittest.TestCase):
     def test_lab_markup_contains_the_interactive_record_browser(self):
         markup = _build_digital_lab_html()
 
+        self.assertIn("DISCOVERY LAB", markup)
         self.assertIn("Historical acoustics experiments", markup)
         self.assertIn("experiment-selector", markup)
         self.assertIn("Hermann von Helmholtz", markup)

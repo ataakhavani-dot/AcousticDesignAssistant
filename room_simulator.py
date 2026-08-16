@@ -1,4 +1,4 @@
-"""Interactive 2-D / 3-D room view for ADA's Advance Tool tab.
+"""Interactive 2-D / 3-D room view for ADA's Room Simulator tab.
 
 The renderer is a dependency-free vanilla-JS app under ``static/roomsim`` (plan
 canvas, orbiting 3-D view, SPL heat map). Its acoustics engine is a port of
