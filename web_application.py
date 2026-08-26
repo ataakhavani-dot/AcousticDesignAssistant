@@ -691,22 +691,54 @@ st.markdown("""
 # ============================================================================
 
 # MATERIALS DICTIONARY
-# Stores information about different building materials and how much sound they absorb
-# The numbers in the lists represent absorption coefficients at different frequencies
-# (Higher number = material absorbs more sound at that frequency)
+# Absorption coefficients ordered by 125, 250, 500, 1000, 2000, and 4000 Hz.
+# Entries repeated in the wall and ceiling source tables are represented once.
 MATERIALS = {
-    # REFLECTIVE MATERIALS (bounce sound back - not great for acoustics)
-    "Concrete (Reflective)": [0.01, 0.01, 0.01, 0.02, 0.02, 0.03],  # Very reflective, absorbs almost no sound
-    "Brick Wall (Reflective)": [0.03, 0.03, 0.03, 0.04, 0.05, 0.07],  # Hard surfaces reflect sound
-    "Glass (Reflective)": [0.35, 0.25, 0.18, 0.12, 0.07, 0.04],  # Glass bounces a lot of sound
-    "Wood Floor (Reflective)": [0.15, 0.11, 0.10, 0.07, 0.06, 0.07],  # Hard wood is somewhat reflective
-    "Drywall (Standard)": [0.29, 0.10, 0.05, 0.04, 0.07, 0.09],  # Standard wall material
-    
-    # ABSORPTIVE MATERIALS (soak up sound - good for acoustics)
-    "Heavy Carpet (Absorptive)": [0.02, 0.06, 0.14, 0.37, 0.60, 0.65],  # Absorbs more sound than reflective
-    "Acoustic Foam (Absorptive)": [0.08, 0.25, 0.60, 0.90, 0.95, 0.90],  # Special foam designed to absorb sound
-    "Fiberglass 4in (Absorptive)": [0.25, 0.90, 1.10, 1.05, 1.00, 1.00],  # Very thick and very absorptive
-    "Velvet Curtains (Absorptive)": [0.07, 0.31, 0.49, 0.75, 0.70, 0.60]  # Soft fabric absorbs sound
+    # Floor materials
+    "Concrete or tile": [0.01, 0.01, 0.015, 0.02, 0.02, 0.02],
+    "Linoleum/vinyl tile on concrete": [0.02, 0.03, 0.03, 0.03, 0.03, 0.02],
+    "Wood on joists": [0.15, 0.11, 0.10, 0.07, 0.06, 0.07],
+    "Parquet on concrete": [0.04, 0.04, 0.07, 0.06, 0.06, 0.07],
+    "Carpet on concrete": [0.02, 0.06, 0.14, 0.37, 0.60, 0.65],
+    "Carpet on foam": [0.08, 0.24, 0.57, 0.69, 0.71, 0.73],
+
+    # Seating materials
+    "Fully occupied fabric upholstered seating": [0.60, 0.74, 0.88, 0.96, 0.93, 0.85],
+    "Occupied wooden pews": [0.57, 0.61, 0.75, 0.86, 0.91, 0.86],
+    "Empty fabric upholstered seating": [0.49, 0.66, 0.80, 0.88, 0.82, 0.70],
+    "Empty metal/wood seats": [0.15, 0.19, 0.22, 0.39, 0.38, 0.30],
+
+    # Wall and ceiling materials
+    "Brick: unglazed": [0.03, 0.03, 0.03, 0.04, 0.05, 0.07],
+    "Brick: unglazed and painted": [0.01, 0.01, 0.02, 0.02, 0.02, 0.03],
+    "Concrete block: coarse": [0.36, 0.44, 0.31, 0.29, 0.39, 0.25],
+    "Concrete block: painted": [0.10, 0.05, 0.06, 0.07, 0.09, 0.08],
+    "Curtain: 10 oz/sq yd fabric molleton": [0.03, 0.04, 0.11, 0.17, 0.24, 0.35],
+    "Curtain: 14 oz/sq yd fabric molleton": [0.07, 0.31, 0.49, 0.75, 0.70, 0.60],
+    "Curtain: 18 oz/sq yd fabric molleton": [0.14, 0.35, 0.55, 0.72, 0.70, 0.65],
+    "Fiberglass: 2 in. 703, no airspace": [0.22, 0.82, 0.99, 0.99, 0.99, 0.99],
+    "Fiberglass: spray, 5 in.": [0.05, 0.15, 0.45, 0.70, 0.80, 0.80],
+    "Fiberglass: spray, 1 in.": [0.16, 0.45, 0.70, 0.90, 0.90, 0.85],
+    "Fiberglass: 2 in. rolls": [0.17, 0.55, 0.80, 0.90, 0.85, 0.80],
+    "Foam: Sonex, 2 in.": [0.06, 0.25, 0.56, 0.81, 0.90, 0.91],
+    "Foam: SDG, 3 in.": [0.24, 0.58, 0.67, 0.91, 0.96, 0.99],
+    "Foam: SDG, 4 in.": [0.33, 0.90, 0.84, 0.99, 0.98, 0.99],
+    "Foam: polyurethane, 1 in.": [0.13, 0.22, 0.68, 1.00, 0.92, 0.97],
+    "Foam: polyurethane, 1/2 in.": [0.09, 0.11, 0.22, 0.60, 0.88, 0.94],
+    "Glass: 1/4 in. plate, large": [0.18, 0.06, 0.04, 0.03, 0.02, 0.02],
+    "Glass: window": [0.35, 0.25, 0.18, 0.12, 0.07, 0.04],
+    "Plaster: smooth on tile/brick": [0.013, 0.015, 0.02, 0.03, 0.04, 0.05],
+    "Plaster: rough on lath": [0.02, 0.03, 0.04, 0.05, 0.04, 0.03],
+    "Marble/tile": [0.01, 0.01, 0.01, 0.01, 0.02, 0.02],
+    "Sheetrock: 1/2 in., 16 in. on center": [0.29, 0.10, 0.05, 0.04, 0.07, 0.09],
+    "Wood: 3/8 in. plywood panel": [0.28, 0.22, 0.17, 0.09, 0.10, 0.11],
+    "Acoustic tiles": [0.05, 0.22, 0.52, 0.56, 0.45, 0.32],
+    "Acoustic ceiling tiles": [0.70, 0.66, 0.72, 0.92, 0.88, 0.75],
+    "Wood": [0.15, 0.11, 0.10, 0.07, 0.06, 0.07],
+
+    # Miscellaneous materials
+    "Water or ice surface": [0.008, 0.008, 0.013, 0.015, 0.020, 0.025],
+    "People (adults)": [0.25, 0.35, 0.42, 0.46, 0.50, 0.50],
 }
 
 # OCTAVE BANDS
@@ -1415,24 +1447,32 @@ with tab_rt60:
     # (60 dB is considered "silent" - you can't hear it anymore)
     # Important: shorter RT = room absorbs sound well, longer RT = room is live/echoey
     
+    material_names = list(MATERIALS)
+
     # Create 3 columns for material selection
     rc1, rc2, rc3 = st.columns(3)
     
     # --- MATERIAL SELECTORS ---
     with rc1:
-        # Dropdown menu to choose wall material
-        # index=4 means "Drywall (Standard)" is selected by default
-        mat_wall = st.selectbox("Walls", list(MATERIALS.keys()), index=4)
+        mat_wall = st.selectbox(
+            "Walls",
+            material_names,
+            index=material_names.index("Sheetrock: 1/2 in., 16 in. on center"),
+        )
     
     with rc2:
-        # Dropdown for floor material
-        # index=3 means "Wood Floor (Reflective)" is selected by default
-        mat_floor = st.selectbox("Floor", list(MATERIALS.keys()), index=3)
+        mat_floor = st.selectbox(
+            "Floor",
+            material_names,
+            index=material_names.index("Wood on joists"),
+        )
     
     with rc3:
-        # Dropdown for ceiling material
-        # index=4 means "Drywall (Standard)" is selected by default
-        mat_ceil = st.selectbox("Ceiling", list(MATERIALS.keys()), index=4)
+        mat_ceil = st.selectbox(
+            "Ceiling",
+            material_names,
+            index=material_names.index("Sheetrock: 1/2 in., 16 in. on center"),
+        )
     
     # --- GET ABSORPTION COEFFICIENTS ---
     # Convert the selected materials into arrays of absorption values
